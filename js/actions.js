@@ -100,10 +100,10 @@ export function summonSpiritAI(playerType, cardUid, gameState) {
 export function handleSpiritClick(cardData, gameState) {
     if (gameState.turn === 'player' && gameState.phase === 'attack' && !cardData.isExhausted && !gameState.attackState.isAttacking && gameState.gameTurn > 1) {
         gameState.attackState = { isAttacking: true, attackerUid: cardData.uid, defender: 'opponent', blockerUid: null };
-        return true;
+        return 'attack';
     } else if (gameState.turn === 'opponent' && gameState.attackState.isAttacking && gameState.attackState.defender === 'player' && !cardData.isExhausted) {
         declareBlock(cardData.uid, gameState);
-        return true;
+        return 'block';
     }
     return false;
 }

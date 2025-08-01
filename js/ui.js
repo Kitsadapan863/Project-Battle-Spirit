@@ -1,8 +1,7 @@
 // js/ui.js
 // หน้าที่: จัดการทุกอย่างที่เกี่ยวกับการแสดงผล (DOM) และรับ Event จากผู้ใช้
-import { handleSpiritClick, initiateSummon, selectCoreForPayment, selectCoreForPlacement, declareBlock } from './actions.js';
-import { attachDragAndDropListeners } from './dragDrop.js';
 import { getSpiritLevelAndBP } from './utils.js';
+import { attachDragAndDropListeners } from './dragDrop.js';
 
 // DOM Element Queries
 export const playerHandContainer = document.querySelector('#player-hand .card-container');
@@ -39,18 +38,14 @@ export const defenseTitle = document.getElementById('defense-title');
 export const defenseAttackerInfo = document.getElementById('defense-attacker-info');
 export const takeDamageBtn = document.getElementById('take-damage-btn');
 
-
-function createCardElement(cardData, location, gameState) {
+function createCardElement(cardData, location, gameState, callbacks) {
     const cardDiv = document.createElement('div');
     cardDiv.className = 'card';
     cardDiv.id = cardData.uid;
     cardDiv.innerHTML = `<img src="${cardData.image}" alt="${cardData.name}" draggable="false"/>`;
 
     if (location === 'hand') {
-        cardDiv.addEventListener('click', () => {
-            initiateSummon(cardData.uid, gameState);
-            updateUI(gameState);
-        });
+        cardDiv.addEventListener('click', () => callbacks.onInitiateSummon(cardData.uid));
     } else if (location === 'field') {
         const { level, bp } = getSpiritLevelAndBP(cardData);
         cardDiv.innerHTML += `
@@ -66,23 +61,19 @@ function createCardElement(cardData, location, gameState) {
         }
         
         if (gameState.placementState.isPlacing && gameState.placementState.targetSpiritUid === cardData.uid) {
-            cardDiv.classList.add('can-attack'); // Re-use green pulse animation for placement target
+            cardDiv.classList.add('can-attack');
         }
 
         if (gameState.attackState.isAttacking && gameState.attackState.defender === 'player' && !cardData.isExhausted) {
              cardDiv.classList.add('can-block');
         }
 
-        cardDiv.addEventListener('click', () => {
-            if (handleSpiritClick(cardData, gameState)) {
-                updateUI(gameState);
-            }
-        });
+        cardDiv.addEventListener('click', () => callbacks.onSpiritClick(cardData));
     }
     return cardDiv;
 }
 
-function createCoreElement(coreData, locationInfo, gameState) {
+function createCoreElement(coreData, locationInfo, gameState, callbacks) {
     const coreDiv = document.createElement('div');
     coreDiv.className = 'core';
     coreDiv.id = coreData.id;
@@ -104,8 +95,7 @@ function createCoreElement(coreData, locationInfo, gameState) {
         }
         coreDiv.addEventListener('click', (e) => {
             e.stopPropagation();
-            selectCoreForPayment(coreData.id, locationInfo.type, locationInfo.spiritUid, gameState);
-            updateUI(gameState);
+            callbacks.onSelectCoreForPayment(coreData.id, locationInfo.type, locationInfo.spiritUid);
         });
     } else if (isPlacing) {
         coreDiv.draggable = false;
@@ -114,8 +104,7 @@ function createCoreElement(coreData, locationInfo, gameState) {
             coreDiv.classList.add('selectable-for-placement');
             coreDiv.addEventListener('click', (e) => {
                 e.stopPropagation();
-                selectCoreForPlacement(coreData.id, locationInfo.type, locationInfo.spiritUid, gameState);
-                updateUI(gameState);
+                callbacks.onSelectCoreForPlacement(coreData.id, locationInfo.type, locationInfo.spiritUid);
             });
         }
     } else {
@@ -124,11 +113,10 @@ function createCoreElement(coreData, locationInfo, gameState) {
     return coreDiv;
 }
 
-export function updateUI(gameState) {
+export function updateUI(gameState, callbacks) {
     if (!gameState) return;
     const { summoningState, placementState, attackState } = gameState;
 
-    // Update Modals
     if (summoningState.isSummoning) {
         summonPaymentOverlay.classList.add('visible');
         summonPaymentTitle.textContent = `Summoning ${summoningState.cardToSummon.name}`;
@@ -165,7 +153,6 @@ export function updateUI(gameState) {
         gameOverModal.classList.add('visible');
     }
 
-    // Update Phase Indicator
     const allPhases = phaseIndicator.querySelectorAll('.phase-step');
     allPhases.forEach(p => p.classList.remove('active-phase'));
     const activePhaseEl = document.getElementById(`phase-${gameState.phase}`);
@@ -173,7 +160,6 @@ export function updateUI(gameState) {
         activePhaseEl.classList.add('active-phase');
     }
 
-    // Update Phase Button Text and State
     if (gameState.turn === 'player') {
         if (attackState.isAttacking && attackState.defender === 'opponent') {
             phaseBtn.textContent = 'Resolve Attack';
@@ -191,9 +177,8 @@ export function updateUI(gameState) {
         }
     }
 
-    // Render Game Board
     playerHandContainer.innerHTML = '';
-    gameState.player.hand.forEach(card => playerHandContainer.appendChild(createCardElement(card, 'hand', gameState)));
+    gameState.player.hand.forEach(card => playerHandContainer.appendChild(createCardElement(card, 'hand', gameState, callbacks)));
 
     opponentHandContainer.innerHTML = '';
     gameState.opponent.hand.forEach(() => {
@@ -205,34 +190,34 @@ export function updateUI(gameState) {
 
     playerFieldElement.innerHTML = '';
     gameState.player.field.forEach(card => {
-        const cardEl = createCardElement(card, 'field', gameState);
+        const cardEl = createCardElement(card, 'field', gameState, callbacks);
         const coreContainer = cardEl.querySelector('.card-core-display');
         if (card.cores && coreContainer) {
-            card.cores.forEach(core => coreContainer.appendChild(createCoreElement(core, { type: 'field', spiritUid: card.uid }, gameState)));
+            card.cores.forEach(core => coreContainer.appendChild(createCoreElement(core, { type: 'field', spiritUid: card.uid }, gameState, callbacks)));
         }
         playerFieldElement.appendChild(cardEl);
     });
 
     opponentFieldElement.innerHTML = '';
     gameState.opponent.field.forEach(card => {
-        const cardEl = createCardElement(card, 'field', gameState);
+        const cardEl = createCardElement(card, 'field', gameState, callbacks);
         cardEl.classList.remove('can-attack');
         const coreContainer = cardEl.querySelector('.card-core-display');
         if (card.cores && coreContainer) {
-            card.cores.forEach(core => coreContainer.appendChild(createCoreElement(core, { type: 'field', spiritUid: card.uid }, gameState)));
+            card.cores.forEach(core => coreContainer.appendChild(createCoreElement(core, { type: 'field', spiritUid: card.uid }, gameState, callbacks)));
         }
         opponentFieldElement.appendChild(cardEl);
     });
 
     playerReserveCoreContainer.innerHTML = '';
-    gameState.player.reserve.forEach(core => playerReserveCoreContainer.appendChild(createCoreElement(core, { type: 'reserve' }, gameState)));
+    gameState.player.reserve.forEach(core => playerReserveCoreContainer.appendChild(createCoreElement(core, { type: 'reserve' }, gameState, callbacks)));
     opponentReserveCoreContainer.innerHTML = '';
-    gameState.opponent.reserve.forEach(core => opponentReserveCoreContainer.appendChild(createCoreElement(core, { type: 'reserve' }, gameState)));
+    gameState.opponent.reserve.forEach(core => opponentReserveCoreContainer.appendChild(createCoreElement(core, { type: 'reserve' }, gameState, callbacks)));
     
     playerCostTrashZone.innerHTML = '<span>Cost Trash</span>';
-    gameState.player.costTrash.forEach(core => playerCostTrashZone.appendChild(createCoreElement(core, { type: 'trash' }, gameState)));
+    gameState.player.costTrash.forEach(core => playerCostTrashZone.appendChild(createCoreElement(core, { type: 'trash' }, gameState, callbacks)));
     opponentCostTrashZone.innerHTML = '<span>Cost Trash</span>';
-    gameState.opponent.costTrash.forEach(core => opponentCostTrashZone.appendChild(createCoreElement(core, { type: 'trash' }, gameState)));
+    gameState.opponent.costTrash.forEach(core => opponentCostTrashZone.appendChild(createCoreElement(core, { type: 'trash' }, gameState, callbacks)));
     
     playerCardTrashZone.innerHTML = `<span>Card Trash (${gameState.player.cardTrash.length})</span>`;
     opponentCardTrashZone.innerHTML = `<span>Card Trash (${gameState.opponent.cardTrash.length})</span>`;
