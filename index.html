@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Battle Spirits Field</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="game-board">
+    <!-- Opponent's Play Area -->
+    <div class="player-zone opponent">
+      <div class="side-zone opponent-left-zones">
+        <div class="zone life">
+          <span>Opponent Life</span>
+          <div class="life-circles" id="opponent-life-circles"></div>
+        </div>
+        <div class="zone reserve" id="opponent-reserve-zone">
+          <span>Opponent Reserve</span>
+          <div id="opponent-reserve-core-container" class="core-container"></div>
+        </div>
+      </div>
+      <div class="zone field" id="opponent-field"></div>
+      <div class="side-zone opponent-right-zones">
+        <div class="zone deck" id="opponent-deck"></div>
+        <div class="zone trash cost-trash" id="opponent-cost-trash-zone">
+          <span>Cost Trash</span>
+        </div>
+        <div class="zone trash card-trash" id="opponent-card-trash-zone">
+          <span>Card Trash</span>
+        </div>
+      </div>
+    </div>
+    <div class="hand opponent-hand" id="opponent-hand">
+      <div class="card-container"></div>
+    </div>
+
+    <!-- Phase Indicator and Controls -->
+    <div class="center-area">
+        <div id="phase-indicator" class="phase-indicator">
+            <div id="phase-start" class="phase-step">Start</div>
+            <div id="phase-core" class="phase-step">Core</div>
+            <div id="phase-draw" class="phase-step">Draw</div>
+            <div id="phase-refresh" class="phase-step">Refresh</div>
+            <div id="phase-main" class="phase-step">Main</div>
+            <div id="phase-attack" class="phase-step">Attack</div>
+            <div id="phase-end" class="phase-step">End</div>
+        </div>
+        <div class="center-controls">
+            <h2 id="turn-indicator"></h2>
+            <button id="phase-btn">Next Step</button>
+        </div>
+    </div>
+
+    <!-- Player's Hand -->
+    <div class="hand" id="player-hand">
+      <h2>Your Hand</h2>
+      <div class="card-container"></div>
+    </div>
+    <!-- Player's Play Area -->
+    <div class="player-zone player">
+      <div class="side-zone player-left-zones">
+        <div class="zone life">
+          <span>Your Life</span>
+          <div class="life-circles" id="player-life-circles"></div>
+        </div>
+        <div class="zone reserve" id="player-reserve-zone">
+          <span>Your Reserve</span>
+          <div id="player-reserve-core-container" class="core-container"></div>
+        </div>
+      </div>
+      <div class="zone field" id="player-field"></div>
+      <div class="side-zone player-right-zones">
+        <div class="zone deck" id="player-deck"></div>
+         <div class="zone trash cost-trash" id="player-cost-trash-zone">
+          <span>Cost Trash</span>
+        </div>
+        <div class="zone trash card-trash" id="player-card-trash-zone">
+          <span>Card Trash</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modals -->
+  <div id="game-over-modal" class="modal-overlay">
+    <div class="modal-content">
+        <h2 id="game-over-message"></h2>
+        <button id="restart-btn">Play Again</button>
+    </div>
+  </div>
+  <div id="summon-payment-overlay" class="modal-overlay">
+      <div id="summon-payment-modal" class="modal-content payment-modal">
+          <h3 id="summon-payment-title">Summoning...</h3>
+          <p id="summon-payment-prompt">Please select cores to pay the cost.</p>
+          <div class="payment-details">
+              <span>Cost: <span id="payment-cost-value">0</span></span>
+              <span>Selected: <span id="payment-selected-value">0</span></span>
+          </div>
+          <div class="payment-buttons">
+              <button id="confirm-summon-btn" disabled>Confirm Payment</button>
+              <button id="cancel-summon-btn">Cancel</button>
+          </div>
+      </div>
+  </div>
+  <div id="placement-overlay" class="modal-overlay">
+    <div id="placement-modal" class="modal-content placement-modal">
+        <h3 id="placement-title">Place Cores</h3>
+        <p>Select cores from your Reserve or other Spirits to place on the new Spirit.</p>
+        <div class="placement-buttons">
+            <button id="confirm-placement-btn">Confirm Placement</button>
+        </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

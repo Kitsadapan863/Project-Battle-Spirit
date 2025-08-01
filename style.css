@@ -1,0 +1,511 @@
+/* พื้นหลังและฟอนต์ */
+body {
+    font-family: 'Segoe UI', sans-serif;
+    background: #4a6d7c;
+    /* background-image: url('../images/download.jpg'); */
+    background-size: cover;
+    background-position: center;
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    color: white;
+    user-select: none;
+  }
+  
+  /* กระดานเกมรวม */
+  .game-board {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 95%;
+    max-width: 1200px;
+    gap: 10px;
+    padding: 10px;
+    border-radius: 15px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    background: none;
+  }
+  
+  /* Player Zone (General for both player and opponent) */
+  .player-zone {
+      display: grid;
+      grid-template-columns: 200px 1fr 200px;
+      grid-template-rows: 1fr;
+      gap: 15px;
+      width: 100%;
+      height: 400px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 15px;
+      box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+      padding: 15px;
+      box-sizing: border-box;
+  }
+  
+  /* Side Zones (Left/Right columns within player-zone) */
+  .side-zone {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 10px;
+  }
+  
+  /* Generic Zone Styling */
+  .zone {
+      background: rgba(0, 0, 0, 0.4);
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 12px;
+      padding: 5px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start; /* Align content to the top */
+      align-items: center;
+      text-align: center;
+      font-weight: bold;
+      color: #fff;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
+      box-sizing: border-box;
+      backdrop-filter: blur(3px);
+      -webkit-backdrop-filter: blur(3px);
+      font-size: 0.9em;
+      position: relative;
+      overflow: hidden;
+      padding-top: 25px; /* Make space for the title span */
+  }
+  
+  .zone > span {
+      position: absolute;
+      top: 5px;
+      left: 0;
+      right: 0;
+      font-weight: bold;
+      text-align: center;
+  }
+  
+  /* *** NEW: Deck Zone Styling *** */
+    .zone.deck {
+        width: 100%;
+        height: 150px;
+        background-color: rgba(0, 0, 0, 0.6);
+        background-image: url('../images/BS_back.webp');
+        background-size: 65%; /* ทำให้รูปไม่ใหญ่จนเกินไป */
+        background-repeat: no-repeat;
+        background-position: center center;
+        justify-content: flex-end; /* ดันข้อความไปไว้ด้านล่าง */
+        padding-bottom: 8px; /* เว้นระยะห่างด้านล่าง */
+        font-size: 1.1em;
+        text-shadow: 0 0 5px black, 0 0 5px black; /* เพิ่มเงาให้ข้อความอ่านง่ายขึ้น */
+    }
+
+  /* Specific Field Zone Styling */
+  .zone.field {
+      background-color: rgba(240, 248, 255, 0.15);
+      flex-direction: row;
+      flex-wrap: wrap;
+      align-content: flex-start;
+      justify-content: flex-start;
+      gap: 10px;
+      padding: 10px; /* Reset padding for field */
+  }
+  
+  /* Central Control Area */
+  .center-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+}
+
+.phase-indicator {
+    display: flex;
+    gap: 5px;
+    background-color: rgba(0,0,0,0.4);
+    padding: 8px;
+    border-radius: 10px;
+}
+.phase-step {
+    padding: 5px 15px;
+    border-radius: 8px;
+    font-weight: bold;
+    color: #a0aec0; /* Dimmed color */
+    transition: all 0.3s ease;
+}
+.phase-step.active-phase {
+    background-color: #007bff;
+    color: white;
+    box-shadow: 0 0 10px #00d2ff;
+}
+
+.center-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 30px;
+    width: 100%;
+}
+
+#turn-indicator {
+    font-size: 1.5rem;
+    font-weight: bold;
+    padding: 10px 20px;
+    background-color: rgba(0,0,0,0.5);
+    border-radius: 10px;
+    text-shadow: 0 0 5px cyan;
+}
+
+#phase-btn {
+    padding: 12px 25px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: white;
+    background: linear-gradient(45deg, #007bff, #00d2ff);
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 15px rgba(0, 123, 255, 0.4);
+    min-width: 180px;
+    text-align: center;
+}
+#phase-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 123, 255, 0.6);
+}
+#phase-btn:disabled {
+    background: #555;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+}
+  
+  /* Life Zone and Circles */
+  .life-circles {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      justify-content: center;
+      margin-top: 5px;
+  }
+  .life-circle {
+      width: 20px;
+      height: 20px;
+      background-color: #00c3ff;
+      border-radius: 50%;
+      border: 2px solid #00567a;
+      box-shadow: 0 0 8px rgba(0, 238, 255, 0.8);
+  }
+  
+  /* Reserve Zone */
+  .zone.reserve {
+    background-color: rgba(234, 234, 234, 0.1);
+    border: 2px solid rgba(170, 170, 170, 0.3);
+  }
+  
+  /* Trash Zones */
+  .zone.trash.cost-trash {
+      background-color: rgba(128, 128, 128, 0.2); /* Grey for cost trash */
+      border-color: rgba(255, 255, 255, 0.3);
+  }
+  
+  .zone.trash.card-trash {
+      background-color: rgba(255, 0, 0, 0.1); /* Red for card trash */
+      border-color: rgba(255, 0, 0, 0.3);
+  }
+  
+  /* Core Container */
+  .core-container {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 5px;
+    width: 100%;
+  }
+  
+  .core {
+    width: 16px;
+    height: 16px;
+    background-color: #007bff;
+    border-radius: 50%;
+    border: 2px solid #002a57;
+    cursor: grab;
+    box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+    transition: all 0.2s ease;
+  }
+  .core.dragging { opacity: 0.7; }
+  
+  /* Styles for Payment Mode */
+  .core.selectable-for-payment {
+      cursor: pointer;
+      border-color: gold;
+      box-shadow: 0 0 10px gold;
+  }
+  .core.selected-for-payment {
+      opacity: 0.4;
+      transform: scale(0.8);
+      border-color: #ff4500;
+      box-shadow: 0 0 10px #ff4500;
+  }
+  
+  
+  /* Hand Styling */
+  .hand {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px;
+    background-color: rgba(0,0,0,0.3);
+    border-radius: 15px;
+    height: 160px;
+  }
+  .hand h2 {
+      color: #fff;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+      margin: 0 0 5px 0;
+      font-size: 1em;
+  }
+  .hand .card-container {
+      display: flex;
+      flex-direction: row;
+      gap: 10px;
+      overflow-x: auto;
+      width: 100%;
+      height: 100%;
+      padding: 10px 5px;
+      box-sizing: border-box;
+      background-color: rgba(255,255,255,0.1);
+      border-radius: 10px;
+  }
+  
+/* Card Styling */
+.card {
+    min-width: 90px; /* Changed from 100px */
+    width: 90px;     /* Changed from 100px */
+    height: 140px;   /* Changed from 154px */
+    border-radius: 8px;
+    padding: 5px;
+    text-align: center;
+    cursor: grab;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    transition: all 0.2s ease-out;
+    justify-content: flex-start;
+    overflow: hidden;
+    border: 2px solid transparent;
+  }
+  .card.dragging { opacity: 0.5; }
+  
+  .field .card, .hand .card {
+      cursor: pointer;
+  }
+  
+  .hand .card:hover {
+      transform: translateY(-10px) scale(1.05);
+      border-color: #00d2ff;
+  }
+  
+  .card.can-attack {
+      border-color: #39ff14;
+      box-shadow: 0 0 15px #39ff14;
+      animation: pulse-green 1.5s infinite;
+  }
+  @keyframes pulse-green {
+      0% { box-shadow: 0 0 5px #39ff14; }
+      50% { box-shadow: 0 0 20px #39ff14; }
+      100% { box-shadow: 0 0 5px #39ff14; }
+  }
+  
+  /* *** FIXED: Adjusted exhausted card styles to prevent overlap *** */
+  .card.exhausted {
+      transform: rotate(90deg) translateY(25px); /* (140px - 90px) / 2 */
+      border-color: #888;
+      box-shadow: none;
+      animation: none;
+      margin-right: 50px; /* 140px (new width) - 90px (old width) */
+  }
+  .card.exhausted:hover {
+      transform: rotate(90deg) translateY(25px) scale(1.05);
+  }
+  
+  .zone.drag-over {
+      border: 2px dashed #007bff;
+      background-color: rgba(0, 123, 255, 0.2);
+  }
+  .card.drag-over-core {
+      border: 2px dashed gold;
+      box-shadow: 0 0 15px gold;
+  }
+  
+  .card img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 4px;
+  }
+  
+  .opponent-hand .card img {
+      content: url('../images/BS_back.webp');
+      object-fit: contain;
+  }
+  
+  .card-info {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(0,0,0,0.6);
+      padding: 2px;
+      font-size: 0.8em;
+  }
+  
+  .card-core-display {
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 2px;
+      padding: 2px;
+      max-width: 90%;
+      background-color: rgba(0,0,0,0.2);
+      border-bottom-left-radius: 5px;
+      z-index: 5;
+  }
+  
+  .card .core {
+      background-color: gold;
+      border-color: darkgoldenrod;
+      width: 14px;
+      height: 14px;
+  }
+  
+  /* Modal Styling */
+  .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.3);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s, visibility 0.3s;
+      pointer-events: none; 
+  }
+
+/* *** FIXED: Move ONLY the summon payment modal to the top *** */
+#summon-payment-overlay, #placement-overlay {
+    align-items: flex-start;
+    padding-top: 20px; /* Adjust this value as needed */
+}
+
+.modal-overlay.visible {
+    opacity: 1;
+    visibility: visible;
+}
+.modal-content {
+    background: linear-gradient(135deg, #2b3248, #1c2130);
+    padding: 40px;
+    border-radius: 20px;
+    text-align: center;
+    border: 2px solid #00d2ff;
+    box-shadow: 0 0 30px rgba(0, 210, 255, 0.5);
+    transform: scale(0.7);
+    transition: transform 0.3s;
+    pointer-events: auto;
+}
+.modal-overlay.visible .modal-content {
+    transform: scale(1);
+}
+#game-over-message {
+    font-size: 3rem;
+    margin-bottom: 20px;
+}
+#restart-btn {
+    padding: 15px 30px;
+    font-size: 1.2rem;
+    background: linear-gradient(45deg, #28a745, #20c997);
+    border: none;
+    border-radius: 10px;
+    color: white;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+#restart-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 15px rgba(40, 167, 69, 0.7);
+}
+  
+/* Payment Modal Styles */
+.payment-modal {
+    padding: 20px;
+    width: 360px;
+}
+.payment-modal h3 {
+    font-size: 1.3rem;
+    margin-top: 0;
+    margin-bottom: 10px;
+    color: #00d2ff;
+}
+.payment-modal p {
+    margin-bottom: 15px;
+    font-size: 0.9rem;
+}
+.payment-details {
+    display: flex;
+    justify-content: space-around;
+    font-size: 1.1rem;
+    margin-bottom: 20px;
+}
+.payment-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+}
+.payment-buttons button {
+    padding: 8px 16px;
+    font-size: 0.9rem;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+#confirm-summon-btn {
+    background: linear-gradient(45deg, #28a745, #20c997);
+    color: white;
+}
+#confirm-summon-btn:disabled {
+    background: #555;
+    cursor: not-allowed;
+}
+#cancel-summon-btn {
+    background: linear-gradient(45deg, #dc3545, #c82333);
+    color: white;
+}
+
+/* *** NEW: Placement Modal Styles *** */
+.placement-modal {
+    padding: 25px;
+}
+.placement-buttons button {
+    padding: 10px 20px;
+    font-size: 1rem;
+    background: linear-gradient(45deg, #007bff, #00d2ff);
+    color: white;
+}
+
+/* *** NEW: Style for highlighting cores during placement *** */
+.core.selectable-for-placement {
+    cursor: pointer;
+    border-color: #39ff14; /* Green border */
+    box-shadow: 0 0 10px #39ff14;
+}
