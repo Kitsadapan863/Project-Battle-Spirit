@@ -1,19 +1,15 @@
 // js/actions.js
-// หน้าที่: จัดการ Logic และกฎของเกม (State Management)
+import { getSpiritLevelAndBP } from './utils.js';
 
-// *** NEW: Centralized function to clean up any spirits with 0 cores ***
 function cleanupField(gameState) {
-    // Cleanup Player's Field
     gameState.player.field = gameState.player.field.filter(spirit => {
         if (spirit.cores.length === 0) {
             console.log(`Cleanup: ${spirit.name} was destroyed (0 cores).`);
             gameState.player.cardTrash.push(spirit);
-            return false; // Remove from field
+            return false;
         }
-        return true; // Keep on field
+        return true;
     });
-
-    // Cleanup Opponent's Field (for future-proofing)
     gameState.opponent.field = gameState.opponent.field.filter(spirit => {
         if (spirit.cores.length === 0) {
             console.log(`Cleanup: Opponent's ${spirit.name} was destroyed (0 cores).`);
@@ -23,7 +19,6 @@ function cleanupField(gameState) {
         return true;
     });
 }
-
 
 export function performRefreshStep(playerType, gameState) {
     const player = gameState[playerType];
@@ -103,19 +98,14 @@ export function summonSpiritAI(playerType, cardUid, gameState) {
 }
 
 export function handleSpiritClick(cardData, gameState) {
-    if (gameState.turn !== 'player' || gameState.phase !== 'attack' || cardData.isExhausted || gameState.summoningState.isSummoning || gameState.placementState.isPlacing || gameState.gameTurn === 1) {
-        return false;
+    if (gameState.turn === 'player' && gameState.phase === 'attack' && !cardData.isExhausted && !gameState.attackState.isAttacking && gameState.gameTurn > 1) {
+        gameState.attackState = { isAttacking: true, attackerUid: cardData.uid, defender: 'opponent', blockerUid: null };
+        return true;
+    } else if (gameState.turn === 'opponent' && gameState.attackState.isAttacking && gameState.attackState.defender === 'player' && !cardData.isExhausted) {
+        declareBlock(cardData.uid, gameState);
+        return true;
     }
-    const damage = calculateTotalSymbols(cardData);
-    cardData.isExhausted = true;
-    for (let i = 0; i < damage; i++) {
-        if (gameState.opponent.life > 0) {
-            gameState.opponent.life--;
-            gameState.opponent.reserve.push({ id: `core-from-life-opp-${Date.now()}-${i}` });
-        }
-    }
-    checkGameOver(gameState);
-    return true;
+    return false;
 }
 
 export function drawCard(playerType, gameState) {
@@ -155,8 +145,6 @@ export function moveCore(coreId, from, sourceCardUid, targetZoneId, targetCardUi
         sourceArray.push(coreToMove);
         return false;
     }
-
-    // *** CHANGE: Call the cleanup function after moving a core ***
     cleanupField(gameState);
     return true;
 }
@@ -209,10 +197,7 @@ export function confirmSummon(gameState) {
             }
         }
     }
-
-    // *** CHANGE: Call the cleanup function after paying cost ***
     cleanupField(gameState);
-
     const cardIndex = gameState.player.hand.findIndex(c => c.uid === cardToSummon.uid);
     const [summonedCard] = gameState.player.hand.splice(cardIndex, 1);
     summonedCard.isExhausted = false;
@@ -240,17 +225,73 @@ export function selectCoreForPlacement(coreId, from, spiritUid, gameState) {
     if (coreIndex > -1) {
         const [movedCore] = sourceArray.splice(coreIndex, 1);
         targetSpirit.cores.push(movedCore);
-
-        // *** CHANGE: Call the cleanup function after moving a core ***
         cleanupField(gameState);
     }
 }
 
 export function confirmPlacement(gameState) {
     if (!gameState.placementState.isPlacing) return;
-    
-    // *** CHANGE: Call the cleanup function as the final check ***
     cleanupField(gameState);
-    
     gameState.placementState = { isPlacing: false, targetSpiritUid: null };
+}
+
+function resolveBattle(gameState) {
+    const { attackerUid, blockerUid } = gameState.attackState;
+    const attackerOwner = gameState.player.field.some(s => s.uid === attackerUid) ? 'player' : 'opponent';
+    const blockerOwner = gameState.player.field.some(s => s.uid === blockerUid) ? 'player' : 'opponent';
+    const attacker = gameState[attackerOwner].field.find(s => s.uid === attackerUid);
+    const blocker = gameState[blockerOwner].field.find(s => s.uid === blockerUid);
+
+    if (!attacker || !blocker) {
+        gameState.attackState = { isAttacking: false, attackerUid: null, defender: null, blockerUid: null };
+        return;
+    }
+
+    const attackerBP = getSpiritLevelAndBP(attacker).bp;
+    const blockerBP = getSpiritLevelAndBP(blocker).bp;
+    attacker.isExhausted = true;
+    blocker.isExhausted = true;
+
+    if (attackerBP > blockerBP) {
+        gameState[blockerOwner].field = gameState[blockerOwner].field.filter(s => s.uid !== blockerUid);
+        gameState[blockerOwner].cardTrash.push(blocker);
+    } else if (blockerBP > attackerBP) {
+        gameState[attackerOwner].field = gameState[attackerOwner].field.filter(s => s.uid !== attackerUid);
+        gameState[attackerOwner].cardTrash.push(attacker);
+    } else {
+        gameState[attackerOwner].field = gameState[attackerOwner].field.filter(s => s.uid !== attackerUid);
+        gameState[attackerOwner].cardTrash.push(attacker);
+        gameState[blockerOwner].field = gameState[blockerOwner].field.filter(s => s.uid !== blockerUid);
+        gameState[blockerOwner].cardTrash.push(blocker);
+    }
+    cleanupField(gameState);
+    gameState.attackState = { isAttacking: false, attackerUid: null, defender: null, blockerUid: null };
+}
+
+export function declareBlock(blockerUid, gameState) {
+    if (!gameState.attackState.isAttacking) return;
+    gameState.attackState.blockerUid = blockerUid;
+    resolveBattle(gameState);
+}
+
+export function takeLifeDamage(gameState) {
+    if (!gameState.attackState.isAttacking) return;
+    const { attackerUid, defender } = gameState.attackState;
+    const attackingPlayer = defender === 'opponent' ? 'player' : 'opponent';
+    const defendingPlayer = defender;
+    const attacker = gameState[attackingPlayer].field.find(s => s.uid === attackerUid);
+    if (!attacker) {
+        gameState.attackState = { isAttacking: false, attackerUid: null, defender: null, blockerUid: null };
+        return;
+    }
+    const damage = calculateTotalSymbols(attacker);
+    for (let i = 0; i < damage; i++) {
+        if (gameState[defendingPlayer].life > 0) {
+            gameState[defendingPlayer].life--;
+            gameState[defendingPlayer].reserve.push({ id: `core-from-life-${defendingPlayer}-${Date.now()}-${i}` });
+        }
+    }
+    attacker.isExhausted = true;
+    gameState.attackState = { isAttacking: false, attackerUid: null, defender: null, blockerUid: null };
+    checkGameOver(gameState);
 }

@@ -1,7 +1,8 @@
 // js/ui.js
 // หน้าที่: จัดการทุกอย่างที่เกี่ยวกับการแสดงผล (DOM) และรับ Event จากผู้ใช้
-import { handleSpiritClick, initiateSummon, selectCoreForPayment, selectCoreForPlacement } from './actions.js';
+import { handleSpiritClick, initiateSummon, selectCoreForPayment, selectCoreForPlacement, declareBlock } from './actions.js';
 import { attachDragAndDropListeners } from './dragDrop.js';
+import { getSpiritLevelAndBP } from './utils.js';
 
 // DOM Element Queries
 export const playerHandContainer = document.querySelector('#player-hand .card-container');
@@ -33,25 +34,11 @@ export const confirmPlacementBtn = document.getElementById('confirm-placement-bt
 export const placementOverlay = document.getElementById('placement-overlay');
 export const placementTitle = document.getElementById('placement-title');
 export const phaseIndicator = document.getElementById('phase-indicator');
+export const defenseOverlay = document.getElementById('defense-overlay');
+export const defenseTitle = document.getElementById('defense-title');
+export const defenseAttackerInfo = document.getElementById('defense-attacker-info');
+export const takeDamageBtn = document.getElementById('take-damage-btn');
 
-export function getSpiritLevelAndBP(spiritCard) {
-    if (!spiritCard || !spiritCard.cores) return { level: 0, bp: 0 };
-    const currentCores = spiritCard.cores.length;
-    let currentLevel = 0;
-    let currentBP = 0;
-    if (!spiritCard.level) return { level: 0, bp: 0 };
-    const levels = Object.keys(spiritCard.level)
-        .map(key => ({ name: key, ...spiritCard.level[key] }))
-        .sort((a, b) => b.core - a.core);
-    for (const levelInfo of levels) {
-        if (currentCores >= levelInfo.core) {
-            currentLevel = parseInt(levelInfo.name.replace('level-', ''), 10);
-            currentBP = levelInfo.bp;
-            break;
-        }
-    }
-    return { level: currentLevel, bp: currentBP };
-}
 
 function createCardElement(cardData, location, gameState) {
     const cardDiv = document.createElement('div');
@@ -74,12 +61,16 @@ function createCardElement(cardData, location, gameState) {
         `;
         if (cardData.isExhausted) {
             cardDiv.classList.add('exhausted');
-        } else if (gameState.turn === 'player' && gameState.phase === 'attack' && !gameState.summoningState.isSummoning && !gameState.placementState.isPlacing && gameState.gameTurn > 1) {
+        } else if (gameState.turn === 'player' && gameState.phase === 'attack' && !gameState.attackState.isAttacking && !gameState.summoningState.isSummoning && !gameState.placementState.isPlacing && gameState.gameTurn > 1) {
             cardDiv.classList.add('can-attack');
         }
         
         if (gameState.placementState.isPlacing && gameState.placementState.targetSpiritUid === cardData.uid) {
             cardDiv.classList.add('can-attack'); // Re-use green pulse animation for placement target
+        }
+
+        if (gameState.attackState.isAttacking && gameState.attackState.defender === 'player' && !cardData.isExhausted) {
+             cardDiv.classList.add('can-block');
         }
 
         cardDiv.addEventListener('click', () => {
@@ -128,7 +119,6 @@ function createCoreElement(coreData, locationInfo, gameState) {
             });
         }
     } else {
-        // *** CHANGE: Core is only draggable during the Main Step ***
         coreDiv.draggable = gameState.phase === 'main';
     }
     return coreDiv;
@@ -136,7 +126,7 @@ function createCoreElement(coreData, locationInfo, gameState) {
 
 export function updateUI(gameState) {
     if (!gameState) return;
-    const { summoningState, placementState } = gameState;
+    const { summoningState, placementState, attackState } = gameState;
 
     // Update Modals
     if (summoningState.isSummoning) {
@@ -159,6 +149,17 @@ export function updateUI(gameState) {
         placementOverlay.classList.remove('visible');
     }
     
+    if (attackState.isAttacking && attackState.defender === 'player') {
+        const attacker = gameState.opponent.field.find(s => s.uid === attackState.attackerUid);
+        if (attacker) {
+            const { bp } = getSpiritLevelAndBP(attacker);
+            defenseAttackerInfo.textContent = `Attacker: ${attacker.name} (BP: ${bp})`;
+            defenseOverlay.classList.add('visible');
+        }
+    } else {
+        defenseOverlay.classList.remove('visible');
+    }
+
     if (gameState.gameover) {
         gameOverMessage.textContent = `${gameState.player.life <= 0 ? 'Opponent' : 'Player'} Wins!`;
         gameOverModal.classList.add('visible');
@@ -174,15 +175,19 @@ export function updateUI(gameState) {
 
     // Update Phase Button Text and State
     if (gameState.turn === 'player') {
-        switch(gameState.phase) {
-            case 'main':
-                phaseBtn.textContent = gameState.gameTurn === 1 ? 'End Turn' : 'Go to Attack Step';
-                break;
-            case 'attack':
-                phaseBtn.textContent = 'End Turn';
-                break;
-            default:
-                phaseBtn.textContent = 'Next Step';
+        if (attackState.isAttacking && attackState.defender === 'opponent') {
+            phaseBtn.textContent = 'Resolve Attack';
+        } else {
+            switch(gameState.phase) {
+                case 'main':
+                    phaseBtn.textContent = gameState.gameTurn === 1 ? 'End Turn' : 'Go to Attack Step';
+                    break;
+                case 'attack':
+                    phaseBtn.textContent = 'End Turn';
+                    break;
+                default:
+                    phaseBtn.textContent = 'Next Step';
+            }
         }
     }
 
@@ -242,7 +247,7 @@ export function updateUI(gameState) {
     
     turnIndicator.textContent = gameState.turn === 'player' ? "Your Turn" : "Opponent's Turn";
     turnIndicator.style.color = gameState.turn === 'player' ? '#00d2ff' : '#ff4141';
-    phaseBtn.disabled = gameState.turn !== 'player' || summoningState.isSummoning || placementState.isPlacing;
+    phaseBtn.disabled = gameState.turn !== 'player' || summoningState.isSummoning || placementState.isPlacing || (attackState.isAttacking && attackState.defender === 'player');
     
     attachDragAndDropListeners(gameState);
 }

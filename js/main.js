@@ -1,11 +1,12 @@
 // js/main.js
-// หน้าที่: ควบคุม Game Loop หลักและเริ่มต้นเกม
 import { allCards } from './cards.js';
-import { updateUI, phaseBtn, restartBtn, cancelSummonBtn, confirmSummonBtn, confirmPlacementBtn, getSpiritLevelAndBP, gameOverModal } from './ui.js';
-import { summonSpiritAI, drawCard, calculateCost, checkGameOver, cancelSummon, confirmSummon, confirmPlacement, calculateTotalSymbols, performRefreshStep } from './actions.js';
+import { updateUI, phaseBtn, restartBtn, cancelSummonBtn, confirmSummonBtn, confirmPlacementBtn, gameOverModal, takeDamageBtn } from './ui.js';
+import { getSpiritLevelAndBP } from './utils.js'; // *** CHANGE: Import from utils.js ***
+import { summonSpiritAI, drawCard, calculateCost, checkGameOver, cancelSummon, confirmSummon, confirmPlacement, calculateTotalSymbols, performRefreshStep, takeLifeDamage, declareBlock } from './actions.js';
 
 let gameState;
 
+// ... (The rest of the main.js file is the same as the previous complete version) ...
 function advancePhase() {
     if (gameState.turn !== 'player' || gameState.summoningState.isSummoning || gameState.placementState.isPlacing) return;
 
@@ -101,33 +102,29 @@ function runAiTurn() {
         if (attackers.length > 0) {
             attackers.sort((a, b) => getSpiritLevelAndBP(b).bp - getSpiritLevelAndBP(a).bp);
             const strongestAttacker = attackers[0];
-            strongestAttacker.isExhausted = true;
-            const damage = calculateTotalSymbols(strongestAttacker);
-            for (let i = 0; i < damage; i++) {
-                if (gameState.player.life > 0) {
-                    gameState.player.life--;
-                    gameState.player.reserve.push({ id: `core-from-life-plr-${Date.now()}-${i}` });
-                }
-            }
-            if (checkGameOver(gameState)) {
-                updateUI(gameState);
-            } else {
-                updateUI(gameState);
-            }
-        }
-
-        setTimeout(() => {
-            if (gameState.gameover) return;
-            console.log("AI Turn Ends");
-            gameState.phase = 'end';
+            
+            gameState.attackState = {
+                isAttacking: true,
+                attackerUid: strongestAttacker.uid,
+                defender: 'player'
+            };
             updateUI(gameState);
-            setTimeout(() => {
-                gameState.turn = 'player';
-                gameState.gameTurn++;
-                startPlayerTurn();
-            }, 500);
-        }, 800);
+        } else {
+            setTimeout(endAiTurn, 500);
+        }
     }, 3000);
+}
+
+function endAiTurn() {
+    if (gameState.gameover) return;
+    console.log("AI Turn Ends");
+    gameState.phase = 'end';
+    updateUI(gameState);
+    setTimeout(() => {
+        gameState.turn = 'player';
+        gameState.gameTurn++;
+        startPlayerTurn();
+    }, 500);
 }
 
 function endTurn() {
@@ -154,6 +151,7 @@ function initializeGame() {
         phase: 'start',
         summoningState: { isSummoning: false, cardToSummon: null, costToPay: 0, selectedCores: [] },
         placementState: { isPlacing: false, targetSpiritUid: null },
+        attackState: { isAttacking: false, attackerUid: null, defender: null, blockerUid: null },
         player: { life: 5, deck: createDeck(), hand: [], field: [], reserve: [], costTrash: [], cardTrash: [] },
         opponent: { life: 5, deck: createDeck(), hand: [], field: [], reserve: [], costTrash: [], cardTrash: [] }
     };
@@ -171,8 +169,22 @@ function initializeGame() {
     startPlayerTurn();
 }
 
-// --- Event Listeners ---
-phaseBtn.addEventListener('click', advancePhase);
+phaseBtn.addEventListener('click', () => {
+    if (gameState.phase === 'attack' && gameState.attackState.isAttacking && gameState.attackState.defender === 'opponent') {
+        const attacker = gameState.player.field.find(s => s.uid === gameState.attackState.attackerUid);
+        const potentialBlockers = gameState.opponent.field.filter(s => !s.isExhausted && getSpiritLevelAndBP(s).bp >= getSpiritLevelAndBP(attacker).bp);
+
+        if (potentialBlockers.length > 0) {
+            const blocker = potentialBlockers[0];
+            declareBlock(blocker.uid, gameState);
+        } else {
+            takeLifeDamage(gameState);
+        }
+        updateUI(gameState);
+    } else {
+        advancePhase();
+    }
+});
 restartBtn.addEventListener('click', initializeGame);
 cancelSummonBtn.addEventListener('click', () => {
     cancelSummon(gameState);
@@ -187,6 +199,10 @@ confirmPlacementBtn.addEventListener('click', () => {
     confirmPlacement(gameState);
     updateUI(gameState);
 });
+takeDamageBtn.addEventListener('click', () => {
+    takeLifeDamage(gameState);
+    updateUI(gameState);
+    setTimeout(endAiTurn, 500);
+});
 
-// Start the game
 document.addEventListener('DOMContentLoaded', initializeGame);

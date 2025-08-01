@@ -509,3 +509,42 @@ body {
     border-color: #39ff14; /* Green border */
     box-shadow: 0 0 10px #39ff14;
 }
+
+/* *** NEW: Style for highlighting potential blockers *** */
+.card.can-block {
+    border-color: #00d2ff; /* Blue border */
+    box-shadow: 0 0 15px #00d2ff;
+    animation: pulse-blue 1.5s infinite;
+}
+@keyframes pulse-blue {
+    0% { box-shadow: 0 0 5px #00d2ff; }
+    50% { box-shadow: 0 0 20px #00d2ff; }
+    100% { box-shadow: 0 0 5px #00d2ff; }
+}
+
+
+
+/* *** NEW: Defense Modal Styles *** */
+.defense-modal {
+    padding: 25px;
+    width: 450px;
+}
+#defense-attacker-info {
+    margin-bottom: 15px;
+    padding: 10px;
+    background-color: rgba(0,0,0,0.3);
+    border-radius: 10px;
+    font-size: 1.1em;
+}
+.defense-buttons {
+    margin-top: 20px;
+}
+#take-damage-btn {
+    padding: 10px 20px;
+    font-size: 1rem;
+    background: linear-gradient(45deg, #dc3545, #c82333);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+}
