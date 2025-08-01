@@ -81,7 +81,7 @@ export function summonSpiritAI(playerType, cardUid, gameState) {
     const cardIndex = player.hand.findIndex(c => c.uid === cardUid);
     if (cardIndex === -1) return false;
     const cardToSummon = player.hand[cardIndex];
-    if (cardToSummon.type !== 'Spirit') return false; // AI should only summon spirits
+    if (cardToSummon.type !== 'Spirit') return false;
     const finalCost = calculateCost(cardToSummon, playerType, gameState);
     const totalCoresNeeded = finalCost + 1;
     if (player.reserve.length >= totalCoresNeeded) {
@@ -100,10 +100,15 @@ export function summonSpiritAI(playerType, cardUid, gameState) {
 
 export function handleSpiritClick(cardData, gameState) {
     if (gameState.turn === 'player' && gameState.phase === 'attack' && !cardData.isExhausted && !gameState.attackState.isAttacking && gameState.gameTurn > 1) {
-        gameState.attackState = { isAttacking: true, attackerUid: cardData.uid, defender: 'opponent', blockerUid: null };
-        enterFlashTiming(gameState, 'beforeBlock');
-        return 'attack';
-    } else if (gameState.turn === 'opponent' && gameState.attackState.isAttacking && gameState.attackState.defender === 'player' && !cardData.isExhausted) {
+        const attacker = gameState.player.field.find(s => s.uid === cardData.uid);
+        if (attacker) {
+            attacker.isExhausted = true;
+            gameState.attackState = { isAttacking: true, attackerUid: cardData.uid, defender: 'opponent', blockerUid: null };
+            enterFlashTiming(gameState, 'beforeBlock');
+            return 'attack';
+        }
+    } 
+    else if (gameState.attackState.isAttacking && gameState.attackState.defender === 'player' && !cardData.isExhausted && !gameState.flashState.isActive) {
         declareBlock(cardData.uid, gameState);
         return 'block';
     }
@@ -119,45 +124,35 @@ export function drawCard(playerType, gameState) {
     }
 }
 
-// *** FIXED: Added 'export' back to this function ***
 export function moveCore(coreId, from, sourceCardUid, targetZoneId, targetCardUid, gameState) {
     const player = gameState.player;
     let coreToMove;
     let sourceArray;
-    // Determine the source array of cores
     if (from === 'card') {
         const sourceCard = player.field.find(c => c.uid === sourceCardUid);
         if (!sourceCard) return false;
         sourceArray = sourceCard.cores;
-    } else { // from 'reserve'
+    } else {
         sourceArray = player.reserve;
     }
-
     const coreIndex = sourceArray.findIndex(c => c.id === coreId);
-    if (coreIndex === -1) return false; // Core not found in source
-
-    // Remove the core from the source
+    if (coreIndex === -1) return false;
     [coreToMove] = sourceArray.splice(coreIndex, 1);
-
-    // Add the core to the destination
     if (targetCardUid) {
         const destCard = player.field.find(c => c.uid === targetCardUid);
         if (destCard) {
             destCard.cores.push(coreToMove);
         } else {
-            // Destination card not found, return the core to where it came from
-            sourceArray.splice(coreIndex, 0, coreToMove);
+            sourceArray.push(coreToMove);
             return false;
         }
     } else if (targetZoneId && targetZoneId.includes('player-reserve-zone')) {
         player.reserve.push(coreToMove);
     } else {
-        // Invalid target, return the core
-        sourceArray.splice(coreIndex, 0, coreToMove);
+        sourceArray.push(coreToMove);
         return false;
     }
-
-    cleanupField(gameState); // Check if any spirit was destroyed by losing its last core
+    cleanupField(gameState);
     return true;
 }
 
@@ -256,14 +251,15 @@ function resolveBattle(gameState) {
     const blockerOwner = gameState.player.field.some(s => s.uid === blockerUid) ? 'player' : 'opponent';
     const attacker = gameState[attackerOwner].field.find(s => s.uid === attackerUid);
     const blocker = gameState[blockerOwner].field.find(s => s.uid === blockerUid);
+
     if (!attacker || !blocker) {
         gameState.attackState = { isAttacking: false, attackerUid: null, defender: null, blockerUid: null };
         return;
     }
+
     const attackerBP = getSpiritLevelAndBP(attacker).bp;
     const blockerBP = getSpiritLevelAndBP(blocker).bp;
-    attacker.isExhausted = true;
-    blocker.isExhausted = true;
+
     if (attackerBP > blockerBP) {
         gameState[blockerOwner].field = gameState[blockerOwner].field.filter(s => s.uid !== blockerUid);
         gameState[blockerOwner].cardTrash.push(blocker);
@@ -282,28 +278,37 @@ function resolveBattle(gameState) {
 
 export function declareBlock(blockerUid, gameState) {
     if (!gameState.attackState.isAttacking) return;
+    
+    const blocker = gameState.player.field.find(s => s.uid === blockerUid) || gameState.opponent.field.find(s => s.uid === blockerUid);
+    if (blocker) {
+        blocker.isExhausted = true;
+    }
+
     gameState.attackState.blockerUid = blockerUid;
     enterFlashTiming(gameState, 'afterBlock');
 }
 
 export function takeLifeDamage(gameState) {
-    if (!gameState.attackState.isAttacking) return;
     const { attackerUid, defender } = gameState.attackState;
-    const attackingPlayer = defender === 'opponent' ? 'player' : 'opponent';
-    const defendingPlayer = defender;
-    const attacker = gameState[attackingPlayer].field.find(s => s.uid === attackerUid);
-    if (!attacker) {
+    if (!attackerUid || !defender) {
         gameState.attackState = { isAttacking: false, attackerUid: null, defender: null, blockerUid: null };
         return;
     }
-    const damage = calculateTotalSymbols(attacker);
-    for (let i = 0; i < damage; i++) {
-        if (gameState[defendingPlayer].life > 0) {
-            gameState[defendingPlayer].life--;
-            gameState[defendingPlayer].reserve.push({ id: `core-from-life-${defendingPlayer}-${Date.now()}-${i}` });
+    
+    const attackingPlayer = defender === 'opponent' ? 'player' : 'opponent';
+    const defendingPlayer = defender;
+    const attacker = gameState[attackingPlayer].field.find(s => s.uid === attackerUid);
+
+    if (attacker) {
+        const damage = calculateTotalSymbols(attacker);
+        for (let i = 0; i < damage; i++) {
+            if (gameState[defendingPlayer].life > 0) {
+                gameState[defendingPlayer].life--;
+                gameState[defendingPlayer].reserve.push({ id: `core-from-life-${defendingPlayer}-${Date.now()}-${i}` });
+            }
         }
     }
-    attacker.isExhausted = true;
+    
     gameState.attackState = { isAttacking: false, attackerUid: null, defender: null, blockerUid: null };
     checkGameOver(gameState);
 }
@@ -317,31 +322,44 @@ export function enterFlashTiming(gameState, timing) {
     };
 }
 
+// *** FIXED: Updated passFlash logic for correct looping priority ***
 export function passFlash(gameState) {
     if (!gameState.flashState.isActive) return null;
+
     const { priority, hasPassed } = gameState.flashState;
-    hasPassed[priority] = true;
-    gameState.flashState.priority = priority === 'player' ? 'opponent' : 'player';
-    if (hasPassed.player && hasPassed.opponent) {
+    const otherPlayer = priority === 'player' ? 'opponent' : 'player';
+
+    // If the other player has already passed, then this pass ends the window.
+    if (hasPassed[otherPlayer]) {
         return resolveFlashWindow(gameState);
     }
-    return null;
+
+    // Otherwise, this is the first pass in a potential chain.
+    hasPassed[priority] = true;
+    gameState.flashState.priority = otherPlayer; // Flip priority
+    
+    return null; // Window remains open
 }
+
 
 export function resolveFlashWindow(gameState) {
     gameState.flashState.isActive = false;
+    
     if (gameState.flashState.timing === 'beforeBlock') {
         if (gameState.attackState.defender === 'opponent') {
             const attacker = gameState.player.field.find(s => s.uid === gameState.attackState.attackerUid);
-            const potentialBlockers = gameState.opponent.field.filter(s => !s.isExhausted && getSpiritLevelAndBP(s).bp >= getSpiritLevelAndBP(attacker).bp);
-            if (potentialBlockers.length > 0) {
-                const blocker = potentialBlockers[0];
-                declareBlock(blocker.uid, gameState);
+            const potentialBlockers = gameState.opponent.field.filter(s => !s.isExhausted);
+            potentialBlockers.sort((a,b) => getSpiritLevelAndBP(b).bp - getSpiritLevelAndBP(a).bp);
+            const bestBlocker = potentialBlockers.length > 0 ? potentialBlockers[0] : null;
+
+            if (bestBlocker && getSpiritLevelAndBP(bestBlocker).bp >= getSpiritLevelAndBP(attacker).bp) {
+                declareBlock(bestBlocker.uid, gameState);
             } else {
                 takeLifeDamage(gameState);
             }
         }
-        return 'attack_resolved_no_block';
+        return 'waiting_for_block_or_damage';
+
     } else if (gameState.flashState.timing === 'afterBlock') {
         resolveBattle(gameState);
         return 'battle_resolved';
@@ -373,6 +391,7 @@ export function cancelFlashPayment(gameState) {
     gameState.flashPaymentState = { isPaying: false, cardToUse: null, costToPay: 0, selectedCores: [] };
 }
 
+// *** FIXED: Using a flash resets the pass chain ***
 export function confirmFlashPayment(gameState) {
     const { isPaying, cardToUse, costToPay, selectedCores } = gameState.flashPaymentState;
     if (!isPaying || selectedCores.length < costToPay) return false;
@@ -400,8 +419,11 @@ export function confirmFlashPayment(gameState) {
     
     console.log(`Used Flash Magic: ${usedCard.name}`);
 
+    // Reset payment state
     gameState.flashPaymentState = { isPaying: false, cardToUse: null, costToPay: 0, selectedCores: [] };
+    // Using a magic resets the pass flags and gives priority to the opponent.
     gameState.flashState.hasPassed = { player: false, opponent: false };
+    gameState.flashState.priority = 'opponent';
 
     return true;
 }

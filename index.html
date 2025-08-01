@@ -8,6 +8,9 @@
 </head>
 <body>
   <div class="game-board">
+        <div class="hand opponent-hand" id="opponent-hand">
+      <div class="card-container"></div>
+    </div>
     <div class="player-zone opponent">
       <div class="side-zone opponent-left-zones">
         <div class="zone life">
@@ -30,9 +33,7 @@
         </div>
       </div>
     </div>
-    <div class="hand opponent-hand" id="opponent-hand">
-      <div class="card-container"></div>
-    </div>
+
 
     <div class="center-area">
         <div id="phase-indicator" class="phase-indicator">
@@ -50,10 +51,7 @@
         </div>
     </div>
 
-    <div class="hand" id="player-hand">
-      <h2>Your Hand</h2>
-      <div class="card-container"></div>
-    </div>
+
     <div class="player-zone player">
       <div class="side-zone player-left-zones">
         <div class="zone life">
@@ -75,6 +73,11 @@
           <span>Card Trash</span>
         </div>
       </div>
+    </div>
+
+        <div class="hand" id="player-hand">
+      <h2>Your Hand</h2>
+      <div class="card-container"></div>
     </div>
   </div>
 

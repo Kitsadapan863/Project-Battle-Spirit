@@ -1,8 +1,15 @@
 /* พื้นหลังและฟอนต์ */
+html {
+    box-sizing: border-box;
+}
+
+*, *:before, *:after {
+    box-sizing: inherit;
+}
+
 body {
     font-family: 'Segoe UI', sans-serif;
     background: #4a6d7c;
-    /* background-image: url('../images/download.jpg'); */
     background-size: cover;
     background-position: center;
     min-height: 100vh;
@@ -14,6 +21,7 @@ body {
     gap: 10px;
     color: white;
     user-select: none;
+    overflow-y: scroll;
   }
   
   /* กระดานเกมรวม */
@@ -26,18 +34,17 @@ body {
     gap: 10px;
     padding: 10px;
     border-radius: 15px;
-    box-shadow: 0 0 20px rgba(0,0,0,0.5);
-    background: none;
+    position: relative; 
   }
   
   /* Player Zone (General for both player and opponent) */
   .player-zone {
       display: grid;
-      grid-template-columns: 200px 1fr 200px;
+      grid-template-columns: 1fr 4.5fr 1fr; 
       grid-template-rows: 1fr;
       gap: 15px;
       width: 100%;
-      height: 400px;
+      height: 450px; 
       background: rgba(255, 255, 255, 0.05);
       border-radius: 15px;
       box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
@@ -61,7 +68,7 @@ body {
       padding: 5px;
       display: flex;
       flex-direction: column;
-      justify-content: flex-start; /* Align content to the top */
+      justify-content: flex-start;
       align-items: center;
       text-align: center;
       font-weight: bold;
@@ -73,7 +80,7 @@ body {
       font-size: 0.9em;
       position: relative;
       overflow: hidden;
-      padding-top: 25px; /* Make space for the title span */
+      padding-top: 25px;
   }
   
   .zone > span {
@@ -84,21 +91,38 @@ body {
       font-weight: bold;
       text-align: center;
   }
+
+  /* FIXED: Pushed life zone down and adjusted reserve height */
+  .zone.life {
+      height: 130px;
+      /* justify-content: center; */
+      margin-top: 150px; /* Pushes the zone down */
+  }
+  .zone.reserve {
+      height: 200px; /* Adjusted to fill remaining space */
+      height: 130px;
+  }
   
-  /* *** NEW: Deck Zone Styling *** */
-    .zone.deck {
+  .zone.deck {
         width: 100%;
-        height: 150px;
+        height: 160px;
         background-color: rgba(0, 0, 0, 0.6);
         background-image: url('../images/BS_back.webp');
-        background-size: 65%; /* ทำให้รูปไม่ใหญ่จนเกินไป */
+        background-size: contain;
         background-repeat: no-repeat;
         background-position: center center;
-        justify-content: flex-end; /* ดันข้อความไปไว้ด้านล่าง */
-        padding-bottom: 8px; /* เว้นระยะห่างด้านล่าง */
+        justify-content: flex-end;
+        padding-bottom: 8px;
         font-size: 1.1em;
-        text-shadow: 0 0 5px black, 0 0 5px black; /* เพิ่มเงาให้ข้อความอ่านง่ายขึ้น */
+        text-shadow: 0 0 5px black, 0 0 5px black;
+        border: 2px solid rgba(255, 255, 255, 0.2);
     }
+  .zone.trash.cost-trash {
+    height: 120px;
+  }
+  .zone.trash.card-trash {
+    height: 120px;
+  }
 
   /* Specific Field Zone Styling */
   .zone.field {
@@ -108,7 +132,7 @@ body {
       align-content: flex-start;
       justify-content: flex-start;
       gap: 10px;
-      padding: 10px; /* Reset padding for field */
+      padding: 10px;
   }
   
   /* Central Control Area */
@@ -131,7 +155,7 @@ body {
     padding: 5px 15px;
     border-radius: 8px;
     font-weight: bold;
-    color: #a0aec0; /* Dimmed color */
+    color: #a0aec0;
     transition: all 0.3s ease;
 }
 .phase-step.active-phase {
@@ -182,14 +206,21 @@ body {
     transform: none;
 }
   
-  /* Life Zone and Circles */
-  .life-circles {
+  /* Life Zone and Core Container */
+  .life-circles, .core-container {
       display: flex;
       flex-wrap: wrap;
-      gap: 5px;
+      gap: 8px;
       justify-content: center;
-      margin-top: 5px;
+      align-items: center;
+      padding: 5px;
+      width: 100%;
   }
+
+  .life-circles {
+      max-width: 90px;
+  }
+
   .life-circle {
       width: 20px;
       height: 20px;
@@ -197,60 +228,42 @@ body {
       border-radius: 50%;
       border: 2px solid #00567a;
       box-shadow: 0 0 8px rgba(0, 238, 255, 0.8);
-  }
-  
-  /* Reserve Zone */
-  .zone.reserve {
-    background-color: rgba(234, 234, 234, 0.1);
-    border: 2px solid rgba(170, 170, 170, 0.3);
-  }
-  
-  /* Trash Zones */
-  .zone.trash.cost-trash {
-      background-color: rgba(128, 128, 128, 0.2); /* Grey for cost trash */
-      border-color: rgba(255, 255, 255, 0.3);
-  }
-  
-  .zone.trash.card-trash {
-      background-color: rgba(255, 0, 0, 0.1); /* Red for card trash */
-      border-color: rgba(255, 0, 0, 0.3);
-  }
-  
-  /* Core Container */
-  .core-container {
-    display: flex;
-    justify-content: center;
-    flex-wrap: wrap;
-    gap: 4px;
-    margin-top: 5px;
-    width: 100%;
+      background-image: none;
   }
   
   .core {
-    width: 16px;
-    height: 16px;
-    background-color: #007bff;
-    border-radius: 50%;
-    border: 2px solid #002a57;
+    width: 22px;
+    height: 22px;
+    background-image: url('../images/Blue_core.webp');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
     cursor: grab;
-    box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
     transition: all 0.2s ease;
+    background-color: transparent;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
   }
-  .core.dragging { opacity: 0.7; }
   
-  /* Styles for Payment Mode */
+  .core.dragging { 
+      opacity: 0.7; 
+      transform: scale(1.1);
+  }
+  
   .core.selectable-for-payment {
-      cursor: pointer;
-      border-color: gold;
-      box-shadow: 0 0 10px gold;
+      filter: drop-shadow(0 0 4px gold);
   }
+
   .core.selected-for-payment {
-      opacity: 0.4;
+      opacity: 0.5;
       transform: scale(0.8);
-      border-color: #ff4500;
-      box-shadow: 0 0 10px #ff4500;
+      filter: drop-shadow(0 0 4px #ff4500);
   }
-  
+
+  .cost-trash .core-container {
+      flex-direction: row;
+  }
   
   /* Hand Styling */
   .hand {
@@ -284,9 +297,9 @@ body {
   
 /* Card Styling */
 .card {
-    min-width: 90px; /* Changed from 100px */
-    width: 90px;     /* Changed from 100px */
-    height: 140px;   /* Changed from 154px */
+    min-width: 100px;
+    width: 100px;
+    height: 140px;
     border-radius: 8px;
     padding: 5px;
     text-align: center;
@@ -323,13 +336,12 @@ body {
       100% { box-shadow: 0 0 5px #39ff14; }
   }
   
-  /* *** FIXED: Adjusted exhausted card styles to prevent overlap *** */
   .card.exhausted {
-      transform: rotate(90deg) translateY(25px); /* (140px - 90px) / 2 */
+      transform: rotate(90deg) translateY(25px);
       border-color: #888;
       box-shadow: none;
       animation: none;
-      margin-right: 50px; /* 140px (new width) - 90px (old width) */
+      margin-right: 50px;
   }
   .card.exhausted:hover {
       transform: rotate(90deg) translateY(25px) scale(1.05);
@@ -368,23 +380,20 @@ body {
   
   .card-core-display {
       position: absolute;
-      top: 2px;
-      right: 2px;
+      top: 5px; 
+      right: 5px; 
       display: flex;
-      flex-wrap: wrap;
-      gap: 2px;
+      flex-wrap: wrap; 
+      gap: 4px;
       padding: 2px;
       max-width: 90%;
-      background-color: rgba(0,0,0,0.2);
-      border-bottom-left-radius: 5px;
       z-index: 5;
   }
   
+  /* Cores on Spirits */
   .card .core {
-      background-color: gold;
-      border-color: darkgoldenrod;
-      width: 14px;
-      height: 14px;
+      width: 20px;
+      height: 20px;
   }
   
   /* Modal Styling */
@@ -402,10 +411,13 @@ body {
       pointer-events: none; 
   }
 
-/* *** FIXED: Move ONLY the summon payment modal to the top *** */
-#summon-payment-overlay, #placement-overlay {
+#summon-payment-overlay, 
+#placement-overlay,
+#defense-overlay,
+#flash-overlay,
+#flash-payment-overlay {
     align-items: flex-start;
-    padding-top: 20px; /* Adjust this value as needed */
+    padding-top: 20px;
 }
 
 .modal-overlay.visible {
@@ -479,20 +491,19 @@ body {
     cursor: pointer;
     transition: all 0.2s ease;
 }
-#confirm-summon-btn {
+#confirm-summon-btn, #confirm-flash-btn {
     background: linear-gradient(45deg, #28a745, #20c997);
     color: white;
 }
-#confirm-summon-btn:disabled {
+#confirm-summon-btn:disabled, #confirm-flash-btn:disabled {
     background: #555;
     cursor: not-allowed;
 }
-#cancel-summon-btn {
+#cancel-summon-btn, #cancel-flash-btn {
     background: linear-gradient(45deg, #dc3545, #c82333);
     color: white;
 }
 
-/* *** NEW: Placement Modal Styles *** */
 .placement-modal {
     padding: 25px;
 }
@@ -503,16 +514,12 @@ body {
     color: white;
 }
 
-/* *** NEW: Style for highlighting cores during placement *** */
 .core.selectable-for-placement {
-    cursor: pointer;
-    border-color: #39ff14; /* Green border */
-    box-shadow: 0 0 10px #39ff14;
+    filter: drop-shadow(0 0 4px #39ff14);
 }
 
-/* *** NEW: Style for highlighting potential blockers *** */
 .card.can-block {
-    border-color: #00d2ff; /* Blue border */
+    border-color: #00d2ff;
     box-shadow: 0 0 15px #00d2ff;
     animation: pulse-blue 1.5s infinite;
 }
@@ -522,12 +529,9 @@ body {
     100% { box-shadow: 0 0 5px #00d2ff; }
 }
 
-
-
-/* *** NEW: Defense Modal Styles *** */
 .defense-modal {
     padding: 25px;
-    width: 450px;
+    width: 360px;
 }
 #defense-attacker-info {
     margin-bottom: 15px;
@@ -550,7 +554,6 @@ body {
 }
 
 
-/* *** NEW: Style for highlighting flash cards *** */
 .card.can-flash {
     border-color: gold;
     box-shadow: 0 0 15px gold;
@@ -562,12 +565,9 @@ body {
     100% { box-shadow: 0 0 5px gold; }
 }
 
-/* (โค้ดส่วนที่เหลือเหมือนเดิม)... */
-
-/* *** NEW: Flash Modal Styles *** */
 .flash-modal {
     padding: 25px;
-    width: 450px;
+    width: 360px;
     border-color: gold;
 }
 .flash-modal h3 {

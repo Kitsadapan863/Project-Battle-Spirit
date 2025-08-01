@@ -25,7 +25,6 @@ const callbacks = {
         selectCoreForPlacement(coreId, from, spiritUid, gameState);
         updateUI(gameState, callbacks);
     },
-    // This now initiates the payment process instead of instantly using the card
     onUseFlash: (cardUid) => {
         initiateFlashPayment(cardUid, gameState);
         updateUI(gameState, callbacks);
@@ -35,8 +34,9 @@ const callbacks = {
 function advancePhase() {
     if (gameState.turn !== 'player' || gameState.summoningState.isSummoning || gameState.placementState.isPlacing || gameState.attackState.isAttacking || gameState.flashState.isActive) return;
 
-    if (gameState.phase === 'attack' && gameState.attackState.isAttacking && gameState.attackState.defender === 'opponent') {
-        enterFlashTiming(gameState, 'beforeBlock');
+    if (gameState.phase === 'attack' && !gameState.attackState.isAttacking) {
+        // If player is in attack step but hasn't declared an attacker, end turn
+        endTurn();
     } else {
         switch (gameState.phase) {
             case 'main':
@@ -113,21 +113,28 @@ function runAiTurn() {
 function aiAttackStep(isNewAttackDeclaration) {
     if (gameState.gameover) return;
     gameState.phase = 'attack';
-    updateUI(gameState, callbacks);
-
+    
     if (isNewAttackDeclaration) {
         const attackers = gameState.opponent.field.filter(s => !s.isExhausted);
         if (attackers.length > 0) {
             attackers.sort((a, b) => getSpiritLevelAndBP(b).bp - getSpiritLevelAndBP(a).bp);
             const attacker = attackers[0];
+            
+            attacker.isExhausted = true;
             gameState.attackState = { isAttacking: true, attackerUid: attacker.uid, defender: 'player' };
             enterFlashTiming(gameState, 'beforeBlock');
             updateUI(gameState, callbacks);
+
+            // After AI attacks, it's player's priority. Game waits for player input.
+            // But AI should decide its action if player passes back to it.
         } else {
             setTimeout(endAiTurn, 500);
         }
+    } else {
+        updateUI(gameState, callbacks);
     }
 }
+
 
 function endAiTurn() {
     if (gameState.gameover) return;
@@ -158,7 +165,7 @@ function initializeGame() {
         summoningState: { isSummoning: false, cardToSummon: null, costToPay: 0, selectedCores: [] },
         placementState: { isPlacing: false, targetSpiritUid: null },
         attackState: { isAttacking: false, attackerUid: null, defender: null, blockerUid: null },
-        flashState: { isActive: false, priority: 'player', hasPassed: { player: false, opponent: false } },
+        flashState: { isActive: false, timing: null, priority: 'player', hasPassed: { player: false, opponent: false } },
         flashPaymentState: { isPaying: false, cardToUse: null, costToPay: 0, selectedCores: [] },
         player: { life: 5, deck: createDeck(), hand: [], field: [], reserve: [], costTrash: [], cardTrash: [] },
         opponent: { life: 5, deck: createDeck(), hand: [], field: [], reserve: [], costTrash: [], cardTrash: [] }
@@ -179,7 +186,6 @@ function initializeGame() {
 phaseBtn.addEventListener('click', advancePhase);
 restartBtn.addEventListener('click', initializeGame);
 
-// Summoning listeners
 cancelSummonBtn.addEventListener('click', () => {
     cancelSummon(gameState);
     updateUI(gameState, callbacks);
@@ -193,54 +199,61 @@ confirmPlacementBtn.addEventListener('click', () => {
     confirmPlacement(gameState);
     updateUI(gameState, callbacks);
 });
-
-// Battle listeners
 takeDamageBtn.addEventListener('click', () => {
     takeLifeDamage(gameState);
     updateUI(gameState, callbacks);
     setTimeout(() => aiAttackStep(true), 500);
 });
 
-// Flash listeners
+// *** FIXED: Simplified passFlashBtn logic for new action flow ***
 passFlashBtn.addEventListener('click', () => {
     const resolutionStatus = passFlash(gameState);
+    updateUI(gameState, callbacks);
 
     if (!gameState.flashState.isActive) {
-        updateUI(gameState, callbacks);
+        // Window is now closed
         if (resolutionStatus === 'battle_resolved') {
             setTimeout(() => aiAttackStep(true), 500);
         }
         return;
     }
 
-    updateUI(gameState, callbacks);
+    // If window is still open, it is now the AI's turn to act.
+    // The AI will always pass for now.
     if (gameState.flashState.priority === 'opponent') {
         setTimeout(() => {
-            const finalResolutionStatus = passFlash(gameState);
+            const finalResolutionStatus = passFlash(gameState); // AI passes
             updateUI(gameState, callbacks);
-            if (finalResolutionStatus === 'battle_resolved') {
-                setTimeout(() => aiAttackStep(true), 500);
+
+            // Check if the AI's pass closed the window
+            if (!gameState.flashState.isActive) {
+                if (finalResolutionStatus === 'battle_resolved') {
+                    setTimeout(() => aiAttackStep(true), 500);
+                }
             }
         }, 500);
     }
 });
 
-// NEW: Flash Payment listeners
+
 cancelFlashBtn.addEventListener('click', () => {
     cancelFlashPayment(gameState);
     updateUI(gameState, callbacks);
 });
 
+// *** FIXED: Simplified confirmFlashBtn logic ***
 confirmFlashBtn.addEventListener('click', () => {
     if (confirmFlashPayment(gameState)) {
         updateUI(gameState, callbacks);
-        // After using magic, it's AI's turn to get priority.
-        // It will auto-pass.
+
+        // After player uses flash, it's AI's turn. AI will pass.
         setTimeout(() => {
-            const resolutionStatus = passFlash(gameState); // AI passes priority
+            const resolutionStatus = passFlash(gameState); // AI passes
             updateUI(gameState, callbacks);
-            if (!gameState.flashState.isActive) { // Check if that pass resolved the window
-                if (resolutionStatus === 'battle_resolved') {
+
+            // Now it is the player's priority again. The game will wait for player input.
+            if (!gameState.flashState.isActive) {
+                 if (resolutionStatus === 'battle_resolved') {
                      setTimeout(() => aiAttackStep(true), 500);
                 }
             }
@@ -253,24 +266,23 @@ function delegateClick(event) {
     const cardEl = event.target.closest('.card');
     const coreEl = event.target.closest('.core');
     const isPayingForSomething = gameState.summoningState.isSummoning || gameState.flashPaymentState.isPaying;
+    const isActionableTurn = gameState.turn === 'player' && !isPayingForSomething && !gameState.placementState.isPlacing;
 
-    if (cardEl && !isPayingForSomething) {
+    if (cardEl && isActionableTurn) {
         const cardId = cardEl.id;
-        const isPlayerHandCard = gameState.player.hand.some(c => c.uid === cardId);
-        const isPlayerFieldCard = gameState.player.field.some(c => c.uid === cardId);
+        const cardDataInHand = gameState.player.hand.find(c => c.uid === cardId);
+        const cardDataOnField = gameState.player.field.find(c => c.uid === cardId);
 
-        if (isPlayerHandCard) {
-            const cardData = gameState.player.hand.find(c => c.uid === cardId);
-            if (cardData.hasFlash && gameState.flashState.isActive && gameState.flashState.priority === 'player') {
+        if (cardDataInHand) {
+            if (cardDataInHand.hasFlash && gameState.flashState.isActive && gameState.flashState.priority === 'player') {
                 callbacks.onUseFlash(cardId);
-            } else if (cardData.type === 'Spirit' && gameState.phase === 'main' && gameState.turn === 'player'){
+            } else if (cardDataInHand.type === 'Spirit' && gameState.phase === 'main'){
                 callbacks.onInitiateSummon(cardId);
             }
-        } else if (isPlayerFieldCard) {
-            const cardData = gameState.player.field.find(c => c.uid === cardId);
-            callbacks.onSpiritClick(cardData);
+        } else if (cardDataOnField) {
+            callbacks.onSpiritClick(cardDataOnField);
         }
-    } else if (coreEl) { // Core clicks are only for payment
+    } else if (coreEl) {
         const coreId = coreEl.id;
         const parentCardEl = coreEl.closest('.card');
         const from = parentCardEl ? 'field' : 'reserve';
