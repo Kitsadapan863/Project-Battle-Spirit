@@ -8,7 +8,6 @@
 </head>
 <body>
   <div class="game-board">
-    <!-- Opponent's Play Area -->
     <div class="player-zone opponent">
       <div class="side-zone opponent-left-zones">
         <div class="zone life">
@@ -35,7 +34,6 @@
       <div class="card-container"></div>
     </div>
 
-    <!-- Phase Indicator and Controls -->
     <div class="center-area">
         <div id="phase-indicator" class="phase-indicator">
             <div id="phase-start" class="phase-step">Start</div>
@@ -52,12 +50,10 @@
         </div>
     </div>
 
-    <!-- Player's Hand -->
     <div class="hand" id="player-hand">
       <h2>Your Hand</h2>
       <div class="card-container"></div>
     </div>
-    <!-- Player's Play Area -->
     <div class="player-zone player">
       <div class="side-zone player-left-zones">
         <div class="zone life">
@@ -82,7 +78,6 @@
     </div>
   </div>
 
-  <!-- Modals -->
   <div id="game-over-modal" class="modal-overlay">
     <div class="modal-content">
         <h2 id="game-over-message"></h2>
@@ -112,8 +107,6 @@
         </div>
     </div>
   </div>
-
-    <!-- *** NEW: Defense Declaration UI *** -->
   <div id="defense-overlay" class="modal-overlay">
     <div id="defense-modal" class="modal-content defense-modal">
         <h3 id="defense-title">Opponent is Attacking!</h3>
@@ -121,6 +114,29 @@
         <p>Choose a Spirit to block, or take the damage.</p>
         <div class="defense-buttons">
             <button id="take-damage-btn">Take Life Damage</button>
+        </div>
+    </div>
+  </div>
+  <div id="flash-payment-overlay" class="modal-overlay">
+      <div id="flash-payment-modal" class="modal-content payment-modal">
+          <h3 id="flash-payment-title">Use Magic</h3>
+          <p id="flash-payment-prompt">Please select cores to pay the cost.</p>
+          <div class="payment-details">
+              <span>Cost: <span id="flash-payment-cost-value">0</span></span>
+              <span>Selected: <span id="flash-payment-selected-value">0</span></span>
+          </div>
+          <div class="payment-buttons">
+              <button id="confirm-flash-btn" disabled>Confirm Payment</button>
+              <button id="cancel-flash-btn">Cancel</button>
+          </div>
+      </div>
+  </div>
+  <div id="flash-overlay" class="modal-overlay">
+    <div id="flash-modal" class="modal-content flash-modal">
+        <h3 id="flash-title">Flash Timing</h3>
+        <p id="flash-prompt">Do you want to use a Flash ability?</p>
+        <div class="flash-buttons">
+            <button id="pass-flash-btn">Pass</button>
         </div>
     </div>
   </div>

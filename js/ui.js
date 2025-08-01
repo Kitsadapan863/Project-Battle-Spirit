@@ -1,5 +1,4 @@
 // js/ui.js
-// หน้าที่: จัดการทุกอย่างที่เกี่ยวกับการแสดงผล (DOM) และรับ Event จากผู้ใช้
 import { getSpiritLevelAndBP } from './utils.js';
 import { attachDragAndDropListeners } from './dragDrop.js';
 
@@ -23,20 +22,36 @@ export const phaseBtn = document.getElementById('phase-btn');
 export const gameOverModal = document.getElementById('game-over-modal');
 export const gameOverMessage = document.getElementById('game-over-message');
 export const restartBtn = document.getElementById('restart-btn');
+// Summon Modal
 export const summonPaymentOverlay = document.getElementById('summon-payment-overlay');
 export const summonPaymentTitle = document.getElementById('summon-payment-title');
 export const paymentCostValue = document.getElementById('payment-cost-value');
 export const paymentSelectedValue = document.getElementById('payment-selected-value');
 export const confirmSummonBtn = document.getElementById('confirm-summon-btn');
 export const cancelSummonBtn = document.getElementById('cancel-summon-btn');
+// Placement Modal
 export const confirmPlacementBtn = document.getElementById('confirm-placement-btn');
 export const placementOverlay = document.getElementById('placement-overlay');
 export const placementTitle = document.getElementById('placement-title');
 export const phaseIndicator = document.getElementById('phase-indicator');
+// Defense Modal
 export const defenseOverlay = document.getElementById('defense-overlay');
 export const defenseTitle = document.getElementById('defense-title');
 export const defenseAttackerInfo = document.getElementById('defense-attacker-info');
 export const takeDamageBtn = document.getElementById('take-damage-btn');
+// Flash Modal
+export const flashOverlay = document.getElementById('flash-overlay');
+export const flashTitle = document.getElementById('flash-title');
+export const flashPrompt = document.getElementById('flash-prompt');
+export const passFlashBtn = document.getElementById('pass-flash-btn');
+// NEW: Flash Payment Modal
+export const flashPaymentOverlay = document.getElementById('flash-payment-overlay');
+export const flashPaymentTitle = document.getElementById('flash-payment-title');
+export const flashPaymentCostValue = document.getElementById('flash-payment-cost-value');
+export const flashPaymentSelectedValue = document.getElementById('flash-payment-selected-value');
+export const confirmFlashBtn = document.getElementById('confirm-flash-btn');
+export const cancelFlashBtn = document.getElementById('cancel-flash-btn');
+
 
 function createCardElement(cardData, location, gameState, callbacks) {
     const cardDiv = document.createElement('div');
@@ -45,7 +60,18 @@ function createCardElement(cardData, location, gameState, callbacks) {
     cardDiv.innerHTML = `<img src="${cardData.image}" alt="${cardData.name}" draggable="false"/>`;
 
     if (location === 'hand') {
-        cardDiv.addEventListener('click', () => callbacks.onInitiateSummon(cardData.uid));
+        const canUseFlash = gameState.flashState.isActive && cardData.hasFlash && gameState.flashState.priority === 'player';
+        if (canUseFlash) {
+            cardDiv.classList.add('can-flash');
+        }
+        cardDiv.addEventListener('click', () => {
+            if(canUseFlash){
+                 callbacks.onUseFlash(cardData.uid)
+            } else {
+                callbacks.onInitiateSummon(cardData.uid)
+            }
+        });
+
     } else if (location === 'field') {
         const { level, bp } = getSpiritLevelAndBP(cardData);
         cardDiv.innerHTML += `
@@ -61,7 +87,7 @@ function createCardElement(cardData, location, gameState, callbacks) {
         }
         
         if (gameState.placementState.isPlacing && gameState.placementState.targetSpiritUid === cardData.uid) {
-            cardDiv.classList.add('can-attack');
+            cardDiv.classList.add('can-attack'); // Re-using can-attack glow for placement target
         }
 
         if (gameState.attackState.isAttacking && gameState.attackState.defender === 'player' && !cardData.isExhausted) {
@@ -77,46 +103,61 @@ function createCoreElement(coreData, locationInfo, gameState, callbacks) {
     const coreDiv = document.createElement('div');
     coreDiv.className = 'core';
     coreDiv.id = coreData.id;
-    const { isSummoning, selectedCores } = gameState.summoningState;
-    const { isPlacing } = gameState.placementState;
 
+    // Determine the current payment state (Summon or Flash)
+    const isSummoning = gameState.summoningState.isSummoning;
+    const isPayingForFlash = gameState.flashPaymentState.isPaying;
+    const isPlacing = gameState.placementState.isPlacing;
+
+    // Cores in trash are never interactive
     if (locationInfo.type === 'trash') {
         coreDiv.draggable = false;
         return coreDiv;
     }
 
-    const isSelectedForPayment = isSummoning && selectedCores.some(c => c.coreId === coreData.id);
-
-    if (isSummoning) {
+    // --- Payment Logic ---
+    if (isSummoning || isPayingForFlash) {
         coreDiv.draggable = false;
+        const paymentState = isSummoning ? gameState.summoningState : gameState.flashPaymentState;
+        const isSelected = paymentState.selectedCores.some(c => c.coreId === coreData.id);
+
         coreDiv.classList.add('selectable-for-payment');
-        if (isSelectedForPayment) {
+        if (isSelected) {
             coreDiv.classList.add('selected-for-payment');
         }
         coreDiv.addEventListener('click', (e) => {
             e.stopPropagation();
+            // The callback will distinguish between summon/flash based on gameState
             callbacks.onSelectCoreForPayment(coreData.id, locationInfo.type, locationInfo.spiritUid);
         });
-    } else if (isPlacing) {
+    }
+    // --- Placement Logic ---
+    else if (isPlacing) {
         coreDiv.draggable = false;
         const isTargetSpiritCore = locationInfo.spiritUid === gameState.placementState.targetSpiritUid;
-        if (!isTargetSpiritCore) {
+        if (!isTargetSpiritCore) { // Can't take cores from the spirit you are placing on
             coreDiv.classList.add('selectable-for-placement');
             coreDiv.addEventListener('click', (e) => {
                 e.stopPropagation();
                 callbacks.onSelectCoreForPlacement(coreData.id, locationInfo.type, locationInfo.spiritUid);
             });
         }
-    } else {
-        coreDiv.draggable = gameState.phase === 'main';
+    }
+    // --- Default / Drag-Drop Logic ---
+    else {
+        coreDiv.draggable = gameState.phase === 'main' && gameState.turn === 'player';
     }
     return coreDiv;
 }
 
+
 export function updateUI(gameState, callbacks) {
     if (!gameState) return;
-    const { summoningState, placementState, attackState } = gameState;
+    const { summoningState, placementState, attackState, flashState, flashPaymentState } = gameState;
 
+    // --- Modal Visibility ---
+
+    // Summon Payment Modal
     if (summoningState.isSummoning) {
         summonPaymentOverlay.classList.add('visible');
         summonPaymentTitle.textContent = `Summoning ${summoningState.cardToSummon.name}`;
@@ -127,6 +168,19 @@ export function updateUI(gameState, callbacks) {
         summonPaymentOverlay.classList.remove('visible');
     }
 
+    // Flash Payment Modal
+    if (flashPaymentState.isPaying) {
+        flashPaymentOverlay.classList.add('visible');
+        flashPaymentTitle.textContent = `Use Magic: ${flashPaymentState.cardToUse.name}`;
+        flashPaymentCostValue.textContent = flashPaymentState.costToPay;
+        flashPaymentSelectedValue.textContent = flashPaymentState.selectedCores.length;
+        confirmFlashBtn.disabled = flashPaymentState.selectedCores.length < flashPaymentState.costToPay;
+    } else {
+        flashPaymentOverlay.classList.remove('visible');
+    }
+
+
+    // Placement Modal
     if (placementState.isPlacing) {
         placementOverlay.classList.add('visible');
         const targetSpirit = gameState.player.field.find(s => s.uid === placementState.targetSpiritUid);
@@ -137,22 +191,35 @@ export function updateUI(gameState, callbacks) {
         placementOverlay.classList.remove('visible');
     }
     
-    if (attackState.isAttacking && attackState.defender === 'player') {
+    // Defense Modal
+    if (attackState.isAttacking && attackState.defender === 'player' && !flashState.isActive) {
+        defenseOverlay.classList.add('visible');
         const attacker = gameState.opponent.field.find(s => s.uid === attackState.attackerUid);
         if (attacker) {
             const { bp } = getSpiritLevelAndBP(attacker);
             defenseAttackerInfo.textContent = `Attacker: ${attacker.name} (BP: ${bp})`;
-            defenseOverlay.classList.add('visible');
         }
     } else {
         defenseOverlay.classList.remove('visible');
     }
 
+    // Flash Timing Modal
+    if (flashState.isActive && !flashPaymentState.isPaying) { // Don't show if we are paying for a flash card
+        flashOverlay.classList.add('visible');
+        flashTitle.textContent = `Flash Timing (${flashState.priority}'s Priority)`;
+    } else {
+        flashOverlay.classList.remove('visible');
+    }
+
+    // Game Over Modal
     if (gameState.gameover) {
         gameOverMessage.textContent = `${gameState.player.life <= 0 ? 'Opponent' : 'Player'} Wins!`;
         gameOverModal.classList.add('visible');
     }
 
+    // --- UI Updates ---
+
+    // Phase Indicator
     const allPhases = phaseIndicator.querySelectorAll('.phase-step');
     allPhases.forEach(p => p.classList.remove('active-phase'));
     const activePhaseEl = document.getElementById(`phase-${gameState.phase}`);
@@ -160,8 +227,9 @@ export function updateUI(gameState, callbacks) {
         activePhaseEl.classList.add('active-phase');
     }
 
+    // Phase Button Text
     if (gameState.turn === 'player') {
-        if (attackState.isAttacking && attackState.defender === 'opponent') {
+        if (attackState.isAttacking && attackState.defender === 'opponent' && !flashState.isActive) {
             phaseBtn.textContent = 'Resolve Attack';
         } else {
             switch(gameState.phase) {
@@ -177,6 +245,7 @@ export function updateUI(gameState, callbacks) {
         }
     }
 
+    // Hands
     playerHandContainer.innerHTML = '';
     gameState.player.hand.forEach(card => playerHandContainer.appendChild(createCardElement(card, 'hand', gameState, callbacks)));
 
@@ -188,6 +257,7 @@ export function updateUI(gameState, callbacks) {
         opponentHandContainer.appendChild(cardEl);
     });
 
+    // Fields
     playerFieldElement.innerHTML = '';
     gameState.player.field.forEach(card => {
         const cardEl = createCardElement(card, 'field', gameState, callbacks);
@@ -201,7 +271,7 @@ export function updateUI(gameState, callbacks) {
     opponentFieldElement.innerHTML = '';
     gameState.opponent.field.forEach(card => {
         const cardEl = createCardElement(card, 'field', gameState, callbacks);
-        cardEl.classList.remove('can-attack');
+        cardEl.classList.remove('can-attack', 'can-block');
         const coreContainer = cardEl.querySelector('.card-core-display');
         if (card.cores && coreContainer) {
             card.cores.forEach(core => coreContainer.appendChild(createCoreElement(core, { type: 'field', spiritUid: card.uid }, gameState, callbacks)));
@@ -209,6 +279,7 @@ export function updateUI(gameState, callbacks) {
         opponentFieldElement.appendChild(cardEl);
     });
 
+    // Reserves and Trash
     playerReserveCoreContainer.innerHTML = '';
     gameState.player.reserve.forEach(core => playerReserveCoreContainer.appendChild(createCoreElement(core, { type: 'reserve' }, gameState, callbacks)));
     opponentReserveCoreContainer.innerHTML = '';
@@ -222,6 +293,7 @@ export function updateUI(gameState, callbacks) {
     playerCardTrashZone.innerHTML = `<span>Card Trash (${gameState.player.cardTrash.length})</span>`;
     opponentCardTrashZone.innerHTML = `<span>Card Trash (${gameState.opponent.cardTrash.length})</span>`;
     
+    // Life and Deck Counts
     playerLifeCirclesContainer.innerHTML = '';
     for (let i = 0; i < gameState.player.life; i++) playerLifeCirclesContainer.innerHTML += `<div class="life-circle"></div>`;
     opponentLifeCirclesContainer.innerHTML = '';
@@ -230,9 +302,10 @@ export function updateUI(gameState, callbacks) {
     playerDeckElement.textContent = `Deck (${gameState.player.deck.length})`;
     opponentDeckElement.textContent = `Deck (${gameState.opponent.deck.length})`;
     
+    // Turn Indicator and Button State
     turnIndicator.textContent = gameState.turn === 'player' ? "Your Turn" : "Opponent's Turn";
     turnIndicator.style.color = gameState.turn === 'player' ? '#00d2ff' : '#ff4141';
-    phaseBtn.disabled = gameState.turn !== 'player' || summoningState.isSummoning || placementState.isPlacing || (attackState.isAttacking && attackState.defender === 'player');
+    phaseBtn.disabled = gameState.turn !== 'player' || summoningState.isSummoning || placementState.isPlacing || (attackState.isAttacking && attackState.defender === 'player') || flashState.isActive || flashPaymentState.isPaying;
     
     attachDragAndDropListeners(gameState);
 }

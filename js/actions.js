@@ -81,6 +81,7 @@ export function summonSpiritAI(playerType, cardUid, gameState) {
     const cardIndex = player.hand.findIndex(c => c.uid === cardUid);
     if (cardIndex === -1) return false;
     const cardToSummon = player.hand[cardIndex];
+    if (cardToSummon.type !== 'Spirit') return false; // AI should only summon spirits
     const finalCost = calculateCost(cardToSummon, playerType, gameState);
     const totalCoresNeeded = finalCost + 1;
     if (player.reserve.length >= totalCoresNeeded) {
@@ -100,6 +101,7 @@ export function summonSpiritAI(playerType, cardUid, gameState) {
 export function handleSpiritClick(cardData, gameState) {
     if (gameState.turn === 'player' && gameState.phase === 'attack' && !cardData.isExhausted && !gameState.attackState.isAttacking && gameState.gameTurn > 1) {
         gameState.attackState = { isAttacking: true, attackerUid: cardData.uid, defender: 'opponent', blockerUid: null };
+        enterFlashTiming(gameState, 'beforeBlock');
         return 'attack';
     } else if (gameState.turn === 'opponent' && gameState.attackState.isAttacking && gameState.attackState.defender === 'player' && !cardData.isExhausted) {
         declareBlock(cardData.uid, gameState);
@@ -117,42 +119,52 @@ export function drawCard(playerType, gameState) {
     }
 }
 
+// *** FIXED: Added 'export' back to this function ***
 export function moveCore(coreId, from, sourceCardUid, targetZoneId, targetCardUid, gameState) {
     const player = gameState.player;
     let coreToMove;
     let sourceArray;
+    // Determine the source array of cores
     if (from === 'card') {
         const sourceCard = player.field.find(c => c.uid === sourceCardUid);
         if (!sourceCard) return false;
         sourceArray = sourceCard.cores;
-    } else {
+    } else { // from 'reserve'
         sourceArray = player.reserve;
     }
+
     const coreIndex = sourceArray.findIndex(c => c.id === coreId);
-    if (coreIndex === -1) return false;
+    if (coreIndex === -1) return false; // Core not found in source
+
+    // Remove the core from the source
     [coreToMove] = sourceArray.splice(coreIndex, 1);
+
+    // Add the core to the destination
     if (targetCardUid) {
         const destCard = player.field.find(c => c.uid === targetCardUid);
         if (destCard) {
             destCard.cores.push(coreToMove);
         } else {
-            sourceArray.push(coreToMove);
+            // Destination card not found, return the core to where it came from
+            sourceArray.splice(coreIndex, 0, coreToMove);
             return false;
         }
     } else if (targetZoneId && targetZoneId.includes('player-reserve-zone')) {
         player.reserve.push(coreToMove);
     } else {
-        sourceArray.push(coreToMove);
+        // Invalid target, return the core
+        sourceArray.splice(coreIndex, 0, coreToMove);
         return false;
     }
-    cleanupField(gameState);
+
+    cleanupField(gameState); // Check if any spirit was destroyed by losing its last core
     return true;
 }
 
 export function initiateSummon(cardUid, gameState) {
     if (gameState.turn !== 'player' || gameState.phase !== 'main' || gameState.summoningState.isSummoning || gameState.placementState.isPlacing) return;
     const cardToSummon = gameState.player.hand.find(c => c.uid === cardUid);
-    if (!cardToSummon) return;
+    if (!cardToSummon || cardToSummon.type !== 'Spirit') return;
     const finalCost = calculateCost(cardToSummon, 'player', gameState);
     const totalAvailableCores = gameState.player.reserve.length + gameState.player.field.reduce((sum, spirit) => sum + spirit.cores.length, 0);
     if (totalAvailableCores < finalCost + 1) {
@@ -162,10 +174,13 @@ export function initiateSummon(cardUid, gameState) {
 }
 
 export function selectCoreForPayment(coreId, from, spiritUid, gameState) {
-    if (!gameState.summoningState.isSummoning) return;
-    const { selectedCores, costToPay } = gameState.summoningState;
-    const coreInfo = { coreId, from, spiritUid };
+    const paymentState = gameState.summoningState.isSummoning ? gameState.summoningState : gameState.flashPaymentState.isPaying ? gameState.flashPaymentState : null;
+    if (!paymentState) return;
+
+    const { selectedCores, costToPay } = paymentState;
+    const coreInfo = { coreId, from: from === 'field' ? 'field' : 'reserve', spiritUid };
     const existingIndex = selectedCores.findIndex(c => c.coreId === coreId);
+
     if (existingIndex > -1) {
         selectedCores.splice(existingIndex, 1);
     } else if (selectedCores.length < costToPay) {
@@ -241,17 +256,14 @@ function resolveBattle(gameState) {
     const blockerOwner = gameState.player.field.some(s => s.uid === blockerUid) ? 'player' : 'opponent';
     const attacker = gameState[attackerOwner].field.find(s => s.uid === attackerUid);
     const blocker = gameState[blockerOwner].field.find(s => s.uid === blockerUid);
-
     if (!attacker || !blocker) {
         gameState.attackState = { isAttacking: false, attackerUid: null, defender: null, blockerUid: null };
         return;
     }
-
     const attackerBP = getSpiritLevelAndBP(attacker).bp;
     const blockerBP = getSpiritLevelAndBP(blocker).bp;
     attacker.isExhausted = true;
     blocker.isExhausted = true;
-
     if (attackerBP > blockerBP) {
         gameState[blockerOwner].field = gameState[blockerOwner].field.filter(s => s.uid !== blockerUid);
         gameState[blockerOwner].cardTrash.push(blocker);
@@ -271,7 +283,7 @@ function resolveBattle(gameState) {
 export function declareBlock(blockerUid, gameState) {
     if (!gameState.attackState.isAttacking) return;
     gameState.attackState.blockerUid = blockerUid;
-    resolveBattle(gameState);
+    enterFlashTiming(gameState, 'afterBlock');
 }
 
 export function takeLifeDamage(gameState) {
@@ -294,4 +306,102 @@ export function takeLifeDamage(gameState) {
     attacker.isExhausted = true;
     gameState.attackState = { isAttacking: false, attackerUid: null, defender: null, blockerUid: null };
     checkGameOver(gameState);
+}
+
+export function enterFlashTiming(gameState, timing) {
+    gameState.flashState = {
+        isActive: true,
+        timing: timing,
+        priority: gameState.turn === 'player' ? 'opponent' : 'player',
+        hasPassed: { player: false, opponent: false }
+    };
+}
+
+export function passFlash(gameState) {
+    if (!gameState.flashState.isActive) return null;
+    const { priority, hasPassed } = gameState.flashState;
+    hasPassed[priority] = true;
+    gameState.flashState.priority = priority === 'player' ? 'opponent' : 'player';
+    if (hasPassed.player && hasPassed.opponent) {
+        return resolveFlashWindow(gameState);
+    }
+    return null;
+}
+
+export function resolveFlashWindow(gameState) {
+    gameState.flashState.isActive = false;
+    if (gameState.flashState.timing === 'beforeBlock') {
+        if (gameState.attackState.defender === 'opponent') {
+            const attacker = gameState.player.field.find(s => s.uid === gameState.attackState.attackerUid);
+            const potentialBlockers = gameState.opponent.field.filter(s => !s.isExhausted && getSpiritLevelAndBP(s).bp >= getSpiritLevelAndBP(attacker).bp);
+            if (potentialBlockers.length > 0) {
+                const blocker = potentialBlockers[0];
+                declareBlock(blocker.uid, gameState);
+            } else {
+                takeLifeDamage(gameState);
+            }
+        }
+        return 'attack_resolved_no_block';
+    } else if (gameState.flashState.timing === 'afterBlock') {
+        resolveBattle(gameState);
+        return 'battle_resolved';
+    }
+    return null;
+}
+
+export function initiateFlashPayment(cardUid, gameState) {
+    if (!gameState.flashState.isActive || gameState.flashState.priority !== 'player') return;
+    const cardToUse = gameState.player.hand.find(c => c.uid === cardUid);
+    if (!cardToUse) return;
+
+    const totalAvailableCores = gameState.player.reserve.length + gameState.player.field.reduce((sum, spirit) => sum + spirit.cores.length, 0);
+    if (totalAvailableCores < cardToUse.cost) {
+        console.log("Not enough available cores to use flash magic.");
+        return;
+    }
+
+    gameState.flashPaymentState = {
+        isPaying: true,
+        cardToUse: cardToUse,
+        costToPay: cardToUse.cost,
+        selectedCores: []
+    };
+}
+
+export function cancelFlashPayment(gameState) {
+    if (!gameState.flashPaymentState.isPaying) return;
+    gameState.flashPaymentState = { isPaying: false, cardToUse: null, costToPay: 0, selectedCores: [] };
+}
+
+export function confirmFlashPayment(gameState) {
+    const { isPaying, cardToUse, costToPay, selectedCores } = gameState.flashPaymentState;
+    if (!isPaying || selectedCores.length < costToPay) return false;
+
+    for (const coreInfo of selectedCores) {
+        let sourceArray;
+        if (coreInfo.from === 'reserve') {
+            sourceArray = gameState.player.reserve;
+        } else {
+            const sourceSpirit = gameState.player.field.find(s => s.uid === coreInfo.spiritUid);
+            sourceArray = sourceSpirit ? sourceSpirit.cores : undefined;
+        }
+        if (sourceArray) {
+            const coreIndex = sourceArray.findIndex(c => c.id === coreInfo.coreId);
+            if (coreIndex > -1) {
+                const [paidCore] = sourceArray.splice(coreIndex, 1);
+                gameState.player.costTrash.push(paidCore);
+            }
+        }
+    }
+
+    const cardIndex = gameState.player.hand.findIndex(c => c.uid === cardToUse.uid);
+    const [usedCard] = gameState.player.hand.splice(cardIndex, 1);
+    gameState.player.cardTrash.push(usedCard);
+    
+    console.log(`Used Flash Magic: ${usedCard.name}`);
+
+    gameState.flashPaymentState = { isPaying: false, cardToUse: null, costToPay: 0, selectedCores: [] };
+    gameState.flashState.hasPassed = { player: false, opponent: false };
+
+    return true;
 }

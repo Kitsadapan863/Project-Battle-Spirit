@@ -548,3 +548,40 @@ body {
     border-radius: 8px;
     cursor: pointer;
 }
+
+
+/* *** NEW: Style for highlighting flash cards *** */
+.card.can-flash {
+    border-color: gold;
+    box-shadow: 0 0 15px gold;
+    animation: pulse-gold 1.5s infinite;
+}
+@keyframes pulse-gold {
+    0% { box-shadow: 0 0 5px gold; }
+    50% { box-shadow: 0 0 20px gold; }
+    100% { box-shadow: 0 0 5px gold; }
+}
+
+/* (โค้ดส่วนที่เหลือเหมือนเดิม)... */
+
+/* *** NEW: Flash Modal Styles *** */
+.flash-modal {
+    padding: 25px;
+    width: 450px;
+    border-color: gold;
+}
+.flash-modal h3 {
+    color: gold;
+}
+.flash-buttons {
+    margin-top: 20px;
+}
+#pass-flash-btn {
+    padding: 10px 20px;
+    font-size: 1rem;
+    background: linear-gradient(45deg, #6c757d, #5a6268);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+}
