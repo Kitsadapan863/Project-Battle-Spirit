@@ -1,23 +1,42 @@
 // js/actions.js
 import { getSpiritLevelAndBP, getCardLevel } from './utils.js';
 
+// NEW: Centralized function for destroying any card on the field
+function destroyCard(cardUid, ownerKey, gameState) {
+    const owner = gameState[ownerKey];
+    const cardIndex = owner.field.findIndex(c => c.uid === cardUid);
+
+    if (cardIndex === -1) return; // Card not found
+
+    const [destroyedCard] = owner.field.splice(cardIndex, 1);
+
+    // Move all cores from the destroyed card to the owner's reserve
+    if (destroyedCard.cores && destroyedCard.cores.length > 0) {
+        owner.reserve.push(...destroyedCard.cores);
+        destroyedCard.cores = []; // Clear cores from the card object
+    }
+
+    // Move the card to the trash
+    owner.cardTrash.push(destroyedCard);
+    console.log(`Destroyed: ${ownerKey}'s ${destroyedCard.name}`);
+}
+
+
+// FIXED: Now uses the new destroyCard function
 function cleanupField(gameState) {
-    gameState.player.field = gameState.player.field.filter(card => {
-        if (card.cores.length === 0 && card.type === 'Spirit') {
-            console.log(`Cleanup: ${card.name} was destroyed (0 cores).`);
-            gameState.player.cardTrash.push(card);
-            return false;
+    // We need to loop backwards when removing items from an array to avoid skipping elements
+    for (let i = gameState.player.field.length - 1; i >= 0; i--) {
+        const card = gameState.player.field[i];
+        if (card.type === 'Spirit' && card.cores.length === 0) {
+            destroyCard(card.uid, 'player', gameState);
         }
-        return true;
-    });
-    gameState.opponent.field = gameState.opponent.field.filter(card => {
-        if (card.cores.length === 0 && card.type === 'Spirit') {
-            console.log(`Cleanup: Opponent's ${card.name} was destroyed (0 cores).`);
-            gameState.opponent.cardTrash.push(card);
-            return false;
+    }
+    for (let i = gameState.opponent.field.length - 1; i >= 0; i--) {
+        const card = gameState.opponent.field[i];
+        if (card.type === 'Spirit' && card.cores.length === 0) {
+            destroyCard(card.uid, 'opponent', gameState);
         }
-        return true;
-    });
+    }
 }
 
 export function performRefreshStep(playerType, gameState) {
@@ -113,8 +132,11 @@ export function handleSpiritClick(cardData, gameState) {
         }
     } 
     else if (gameState.attackState.isAttacking && gameState.attackState.defender === 'player' && !cardData.isExhausted && !gameState.flashState.isActive) {
-        declareBlock(cardData.uid, gameState);
-        return 'block';
+        const isPlayerCard = gameState.player.field.some(c => c.uid === cardData.uid);
+        if (isPlayerCard) {
+            declareBlock(cardData.uid, gameState);
+            return 'block';
+        }
     }
     return false;
 }
@@ -259,6 +281,7 @@ export function confirmPlacement(gameState) {
     gameState.placementState = { isPlacing: false, targetSpiritUid: null };
 }
 
+// FIXED: Now uses the new destroyCard function
 function resolveBattle(gameState) {
     const { attackerUid, blockerUid } = gameState.attackState;
     const attackerOwner = gameState.player.field.some(s => s.uid === attackerUid) ? 'player' : 'opponent';
@@ -275,18 +298,14 @@ function resolveBattle(gameState) {
     const blockerBP = getSpiritLevelAndBP(blocker).bp;
 
     if (attackerBP > blockerBP) {
-        gameState[blockerOwner].field = gameState[blockerOwner].field.filter(s => s.uid !== blockerUid);
-        gameState[blockerOwner].cardTrash.push(blocker);
+        destroyCard(blockerUid, blockerOwner, gameState);
     } else if (blockerBP > attackerBP) {
-        gameState[attackerOwner].field = gameState[attackerOwner].field.filter(s => s.uid !== attackerUid);
-        gameState[attackerOwner].cardTrash.push(attacker);
+        destroyCard(attackerUid, attackerOwner, gameState);
     } else {
-        gameState[attackerOwner].field = gameState[attackerOwner].field.filter(s => s.uid !== attackerUid);
-        gameState[attackerOwner].cardTrash.push(attacker);
-        gameState[blockerOwner].field = gameState[blockerOwner].field.filter(s => s.uid !== blockerUid);
-        gameState[blockerOwner].cardTrash.push(blocker);
+        destroyCard(attackerUid, attackerOwner, gameState);
+        destroyCard(blockerUid, blockerOwner, gameState);
     }
-    cleanupField(gameState);
+    
     gameState.attackState = { isAttacking: false, attackerUid: null, defender: null, blockerUid: null };
 }
 
@@ -377,13 +396,11 @@ export function resolveFlashWindow(gameState) {
     return null;
 }
 
-// *** FIXED: Call calculateCost to get the reduced cost for magic cards ***
 export function initiateFlashPayment(cardUid, gameState) {
     if (!gameState.flashState.isActive || gameState.flashState.priority !== 'player') return;
     const cardToUse = gameState.player.hand.find(c => c.uid === cardUid);
     if (!cardToUse) return;
 
-    // Calculate the final cost including symbol reductions
     const finalCost = calculateCost(cardToUse, 'player', gameState);
     const totalAvailableCores = gameState.player.reserve.length + gameState.player.field.reduce((sum, card) => sum + card.cores.length, 0);
 
@@ -395,7 +412,7 @@ export function initiateFlashPayment(cardUid, gameState) {
     gameState.flashPaymentState = {
         isPaying: true,
         cardToUse: cardToUse,
-        costToPay: finalCost, // Use the reduced cost
+        costToPay: finalCost,
         selectedCores: []
     };
 }

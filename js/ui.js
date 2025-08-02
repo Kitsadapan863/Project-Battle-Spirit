@@ -56,7 +56,8 @@ export const confirmFlashBtn = document.getElementById('confirm-flash-btn');
 export const cancelFlashBtn = document.getElementById('cancel-flash-btn');
 
 
-function createCardElement(cardData, location, gameState, callbacks) {
+// *** FIXED: Added 'owner' parameter to correctly apply can-block class ***
+function createCardElement(cardData, location, owner, gameState, callbacks) {
     const cardDiv = document.createElement('div');
     cardDiv.className = 'card';
     cardDiv.id = cardData.uid;
@@ -95,7 +96,7 @@ function createCardElement(cardData, location, gameState, callbacks) {
             `;
             if (cardData.isExhausted) {
                 cardDiv.classList.add('exhausted');
-            } else if (gameState.turn === 'player' && gameState.phase === 'attack' && !gameState.attackState.isAttacking && !gameState.summoningState.isSummoning && !gameState.placementState.isPlacing && gameState.gameTurn > 1) {
+            } else if (owner === 'player' && gameState.turn === 'player' && gameState.phase === 'attack' && !gameState.attackState.isAttacking && !gameState.summoningState.isSummoning && !gameState.placementState.isPlacing && gameState.gameTurn > 1) {
                 cardDiv.classList.add('can-attack');
             }
         }
@@ -104,7 +105,7 @@ function createCardElement(cardData, location, gameState, callbacks) {
             cardDiv.classList.add('can-attack');
         }
 
-        if (cardData.type === 'Spirit' && gameState.attackState.isAttacking && gameState.attackState.defender === 'player' && !cardData.isExhausted && !gameState.flashState.isActive) {
+        if (owner === 'player' && cardData.type === 'Spirit' && gameState.attackState.isAttacking && gameState.attackState.defender === 'player' && !cardData.isExhausted && !gameState.flashState.isActive) {
              cardDiv.classList.add('can-block');
         }
 
@@ -112,6 +113,7 @@ function createCardElement(cardData, location, gameState, callbacks) {
     }
     return cardDiv;
 }
+
 
 function createCoreElement(coreData, locationInfo, gameState, callbacks) {
     const coreDiv = document.createElement('div');
@@ -158,7 +160,6 @@ export function updateUI(gameState, callbacks) {
     if (!gameState) return;
     const { summoningState, placementState, attackState, flashState, flashPaymentState } = gameState;
 
-    // (Modal Visibility and other UI updates remain the same)...
     if (summoningState.isSummoning) {
         summonPaymentOverlay.classList.add('visible');
         summonPaymentTitle.textContent = `Summoning ${summoningState.cardToSummon.name}`;
@@ -237,7 +238,7 @@ export function updateUI(gameState, callbacks) {
     }
 
     playerHandContainer.innerHTML = '';
-    gameState.player.hand.forEach(card => playerHandContainer.appendChild(createCardElement(card, 'hand', gameState, callbacks)));
+    gameState.player.hand.forEach(card => playerHandContainer.appendChild(createCardElement(card, 'hand', 'player', gameState, callbacks)));
     opponentHandContainer.innerHTML = '';
     gameState.opponent.hand.forEach(() => {
         const cardEl = document.createElement('div');
@@ -252,15 +253,13 @@ export function updateUI(gameState, callbacks) {
     if (playerNexusesContainer) playerNexusesContainer.innerHTML = '';
 
     gameState.player.field.forEach(card => {
-        const cardEl = createCardElement(card, 'field', gameState, callbacks);
-        // *** FIXED: Added the missing logic to render cores on the card element ***
+        const cardEl = createCardElement(card, 'field', 'player', gameState, callbacks);
         const coreContainer = cardEl.querySelector('.card-core-display');
         if (card.cores && coreContainer) {
             card.cores.forEach(core => {
                 coreContainer.appendChild(createCoreElement(core, { type: 'field', spiritUid: card.uid }, gameState, callbacks));
             });
         }
-        // *** END OF FIX ***
         if (card.type === 'Spirit' && playerSpiritsContainer) {
             playerSpiritsContainer.appendChild(cardEl);
         } else if (card.type === 'Nexus' && playerNexusesContainer) {
@@ -274,15 +273,13 @@ export function updateUI(gameState, callbacks) {
     if (opponentNexusesContainer) opponentNexusesContainer.innerHTML = '';
 
     gameState.opponent.field.forEach(card => {
-        const cardEl = createCardElement(card, 'field', gameState, callbacks);
-        // *** FIXED: Added the missing logic to render cores on the card element ***
+        const cardEl = createCardElement(card, 'field', 'opponent', gameState, callbacks);
         const coreContainer = cardEl.querySelector('.card-core-display');
         if (card.cores && coreContainer) {
             card.cores.forEach(core => {
                 coreContainer.appendChild(createCoreElement(core, { type: 'field', spiritUid: card.uid }, gameState, callbacks));
             });
         }
-        // *** END OF FIX ***
         if (card.type === 'Spirit' && opponentSpiritsContainer) {
             opponentSpiritsContainer.appendChild(cardEl);
         } else if (card.type === 'Nexus' && opponentNexusesContainer) {
