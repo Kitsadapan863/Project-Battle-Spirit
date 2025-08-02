@@ -54,9 +54,16 @@ export const magicPaymentCostValue = document.getElementById('magic-payment-cost
 export const magicPaymentSelectedValue = document.getElementById('magic-payment-selected-value');
 export const confirmMagicBtn = document.getElementById('confirm-magic-btn');
 export const cancelMagicBtn = document.getElementById('cancel-magic-btn');
+export const discardOverlay = document.getElementById('discard-overlay');
+export const discardTitle = document.getElementById('discard-title');
+export const discardPrompt = document.getElementById('discard-prompt');
+export const confirmDiscardBtn = document.getElementById('confirm-discard-btn');
+// NEW: Core Removal Confirmation Modal Elements
+export const coreRemovalConfirmationOverlay = document.getElementById('core-removal-confirmation-overlay');
+export const confirmCoreRemovalBtn = document.getElementById('confirm-core-removal-btn');
+export const cancelCoreRemovalBtn = document.getElementById('cancel-core-removal-btn');
 
 
-// *** FIXED: Corrected highlighting logic for Flash cards in Main Step ***
 function createCardElement(cardData, location, owner, gameState, callbacks) {
     const cardDiv = document.createElement('div');
     cardDiv.className = 'card';
@@ -67,34 +74,21 @@ function createCardElement(cardData, location, owner, gameState, callbacks) {
         const isPlayerTurn = gameState.turn === 'player';
         const isMainStep = gameState.phase === 'main';
         const isFlashTiming = gameState.flashState.isActive && gameState.flashState.priority === 'player';
+        const isDiscarding = gameState.discardState.isDiscarding;
         
-        const canUseFlash = cardData.effects?.flash;
-        const canUseMain = cardData.effects?.main;
+        const canUseFlash = cardData.effects?.some(e => e.timing === 'flash');
+        const canUseMain = cardData.effects?.some(e => e.timing === 'main');
 
-        // Highlight for Flash Timing
         if (isFlashTiming && canUseFlash) {
             cardDiv.classList.add('can-flash');
-        } 
-        // Highlight for Main Step (can use Main or Flash)
-        else if (isPlayerTurn && isMainStep && cardData.type === 'Magic' && (canUseMain || canUseFlash)) {
-            cardDiv.classList.add('can-main'); 
-        }
-
-        cardDiv.addEventListener('click', () => {
-            if (isFlashTiming && canUseFlash){
-                callbacks.onUseMagic(cardData.uid, 'flash');
-            } else if (isPlayerTurn && isMainStep && cardData.type === 'Magic') {
-                // In main step, prefer 'main' effect, but allow 'flash' if it's the only option
-                if (canUseMain) {
-                    callbacks.onUseMagic(cardData.uid, 'main');
-                } else if (canUseFlash) {
-                    callbacks.onUseMagic(cardData.uid, 'flash');
-                }
-            } else if (isPlayerTurn && isMainStep && (cardData.type === 'Spirit' || cardData.type === 'Nexus')){
-                callbacks.onInitiateSummon(cardData.uid);
+        } else if (isPlayerTurn && isMainStep && cardData.type === 'Magic' && (canUseMain || canUseFlash)) {
+            cardDiv.classList.add('can-main');
+        } else if (isDiscarding) {
+            cardDiv.classList.add('can-discard');
+            if (gameState.discardState.cardToDiscard === cardData.uid) {
+                cardDiv.classList.add('selected-for-discard');
             }
-        });
-
+        }
     } else if (location === 'field') {
         if (cardData.type === 'Nexus') {
             const { level } = getCardLevel(cardData);
@@ -106,7 +100,7 @@ function createCardElement(cardData, location, owner, gameState, callbacks) {
                 <div class="card-core-display"></div>
             `;
         } else { 
-            const { level, bp } = getSpiritLevelAndBP(cardData);
+            const { level, bp } = getSpiritLevelAndBP(cardData, owner, gameState);
             cardDiv.innerHTML += `
                 <div class="card-info">
                     <p>Lv${level} BP: ${bp}</p>
@@ -127,49 +121,47 @@ function createCardElement(cardData, location, owner, gameState, callbacks) {
         if (owner === 'player' && cardData.type === 'Spirit' && gameState.attackState.isAttacking && gameState.attackState.defender === 'player' && !cardData.isExhausted && !gameState.flashState.isActive) {
              cardDiv.classList.add('can-block');
         }
-
-        cardDiv.addEventListener('click', () => callbacks.onSpiritClick(cardData));
     }
     return cardDiv;
 }
 
 
+// *** FIXED: Simplified click handling logic ***
 function createCoreElement(coreData, locationInfo, gameState, callbacks) {
     const coreDiv = document.createElement('div');
     coreDiv.className = 'core';
     coreDiv.id = coreData.id;
-    const isSummoning = gameState.summoningState.isSummoning;
-    const isPayingForMagic = gameState.magicPaymentState.isPaying;
+    const isPaying = gameState.summoningState.isSummoning || gameState.magicPaymentState.isPaying;
     const isPlacing = gameState.placementState.isPlacing;
+
     if (locationInfo.type === 'trash') {
         coreDiv.draggable = false;
         return coreDiv;
     }
-    if (isSummoning || isPayingForMagic) {
+    
+    // If we are in a special state (paying, placing), cores become clickable
+    if (isPaying || isPlacing) {
         coreDiv.draggable = false;
-        const paymentState = isSummoning ? gameState.summoningState : gameState.magicPaymentState;
-        const isSelected = paymentState.selectedCores.some(c => c.coreId === coreData.id);
-        coreDiv.classList.add('selectable-for-payment');
-        if (isSelected) {
-            coreDiv.classList.add('selected-for-payment');
-        }
-        coreDiv.addEventListener('click', (e) => {
-            e.stopPropagation();
-            callbacks.onSelectCoreForPayment(coreData.id, locationInfo.type === 'field' ? 'field' : 'reserve', locationInfo.spiritUid);
-        });
-    }
-    else if (isPlacing) {
-        coreDiv.draggable = false;
-        const isTargetSpiritCore = locationInfo.spiritUid === gameState.placementState.targetSpiritUid;
-        if (!isTargetSpiritCore) {
+        
+        if (isPaying) {
+            const paymentState = gameState.summoningState.isSummoning ? gameState.summoningState : gameState.magicPaymentState;
+            const isSelected = paymentState.selectedCores.some(c => c.coreId === coreData.id);
+            coreDiv.classList.add('selectable-for-payment');
+            if (isSelected) {
+                coreDiv.classList.add('selected-for-payment');
+            }
+            coreDiv.addEventListener('click', (e) => {
+                e.stopPropagation();
+                callbacks.onSelectCoreForPayment(coreData.id, locationInfo.type === 'field' ? 'field' : 'reserve', locationInfo.spiritUid);
+            });
+        } else { // isPlacing
             coreDiv.classList.add('selectable-for-placement');
             coreDiv.addEventListener('click', (e) => {
                 e.stopPropagation();
-                callbacks.onSelectCoreForPlacement(coreData.id, locationInfo.type, locationInfo.spiritUid);
+                callbacks.onSelectCoreForPlacement(coreData.id, locationInfo.type === 'field' ? 'field' : 'reserve', locationInfo.spiritUid);
             });
         }
-    }
-    else {
+    } else { // Standard main step drag-and-drop
         coreDiv.draggable = gameState.phase === 'main' && gameState.turn === 'player';
     }
     return coreDiv;
@@ -178,7 +170,7 @@ function createCoreElement(coreData, locationInfo, gameState, callbacks) {
 
 export function updateUI(gameState, callbacks) {
     if (!gameState) return;
-    const { summoningState, placementState, attackState, flashState, magicPaymentState } = gameState;
+    const { summoningState, placementState, attackState, flashState, magicPaymentState, discardState } = gameState;
 
     if (summoningState.isSummoning) {
         summonPaymentOverlay.classList.add('visible');
@@ -202,9 +194,9 @@ export function updateUI(gameState, callbacks) {
 
     if (placementState.isPlacing) {
         placementOverlay.classList.add('visible');
-        const targetSpirit = gameState.player.field.find(s => s.uid === placementState.targetSpiritUid);
-        if (targetSpirit) {
-            placementTitle.textContent = `Place Cores on ${targetSpirit.name}`;
+        const targetCard = gameState.player.field.find(s => s.uid === placementState.targetSpiritUid);
+        if (targetCard) {
+            placementTitle.textContent = `Place Cores on ${targetCard.name}`;
         }
     } else {
         placementOverlay.classList.remove('visible');
@@ -214,7 +206,7 @@ export function updateUI(gameState, callbacks) {
         defenseOverlay.classList.add('visible');
         const attacker = gameState.opponent.field.find(s => s.uid === attackState.attackerUid);
         if (attacker) {
-            const { bp } = getSpiritLevelAndBP(attacker);
+            const { bp } = getSpiritLevelAndBP(attacker, 'opponent', gameState);
             defenseAttackerInfo.textContent = `Attacker: ${attacker.name} (BP: ${bp})`;
         }
     } else {
@@ -226,6 +218,21 @@ export function updateUI(gameState, callbacks) {
         flashTitle.textContent = `Flash Timing (${flashState.priority}'s Priority)`;
     } else {
         flashOverlay.classList.remove('visible');
+    }
+
+    if (discardState.isDiscarding) {
+        discardOverlay.classList.add('visible');
+        discardPrompt.textContent = `Please select ${discardState.count} card(s) from your hand to discard.`;
+        confirmDiscardBtn.disabled = !discardState.cardToDiscard;
+    } else {
+        discardOverlay.classList.remove('visible');
+    }
+
+    // NEW: Core Removal Confirmation Modal Visibility
+    if (gameState.coreRemovalConfirmationState.isConfirming) {
+        coreRemovalConfirmationOverlay.classList.add('visible');
+    } else {
+        coreRemovalConfirmationOverlay.classList.remove('visible');
     }
 
     if (gameState.gameover) {
@@ -365,7 +372,7 @@ export function updateUI(gameState, callbacks) {
     
     turnIndicator.textContent = gameState.turn === 'player' ? "Your Turn" : "Opponent's Turn";
     turnIndicator.style.color = gameState.turn === 'player' ? '#00d2ff' : '#ff4141';
-    phaseBtn.disabled = gameState.turn !== 'player' || summoningState.isSummoning || placementState.isPlacing || (attackState.isAttacking && attackState.defender === 'player') || flashState.isActive || magicPaymentState.isPaying;
+    phaseBtn.disabled = gameState.turn !== 'player' || summoningState.isSummoning || placementState.isPlacing || (attackState.isAttacking && attackState.defender === 'player') || flashState.isActive || magicPaymentState.isPaying || discardState.isDiscarding;
     
     attachDragAndDropListeners(gameState, callbacks);
 

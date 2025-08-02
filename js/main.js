@@ -1,8 +1,9 @@
 // js/main.js
 import { allCards } from './cards.js';
-import { updateUI, phaseBtn, restartBtn, cancelSummonBtn, confirmSummonBtn, confirmPlacementBtn, gameOverModal, takeDamageBtn, playerHandContainer, playerFieldElement, playerReserveCoreContainer, passFlashBtn, confirmMagicBtn, cancelMagicBtn, cardTrashModal, closeTrashViewerBtn, playerCardTrashZone, opponentCardTrashZone, opponentCardTrashModal, closeOpponentTrashViewerBtn } from './ui.js';
-import { getSpiritLevelAndBP } from './utils.js';
-import { summonSpiritAI, drawCard, calculateCost, checkGameOver, cancelSummon, confirmSummon, confirmPlacement, performRefreshStep, takeLifeDamage, declareBlock, initiateSummon, selectCoreForPlacement, selectCoreForPayment, handleSpiritClick, enterFlashTiming, passFlash, initiateMagicPayment, confirmMagicPayment, cancelMagicPayment } from './actions.js';
+// FIXED: Imported the missing cancelCoreRemovalBtn variable
+import { updateUI, phaseBtn, restartBtn, cancelSummonBtn, confirmSummonBtn, confirmPlacementBtn, gameOverModal, takeDamageBtn, playerHandContainer, playerFieldElement, playerReserveCoreContainer, passFlashBtn, confirmMagicBtn, cancelMagicBtn, cardTrashModal, closeTrashViewerBtn, playerCardTrashZone, opponentCardTrashZone, opponentCardTrashModal, closeOpponentTrashViewerBtn, confirmDiscardBtn, confirmCoreRemovalBtn, cancelCoreRemovalBtn } from './ui.js';
+import { getSpiritLevelAndBP, getCardLevel } from './utils.js';
+import { summonSpiritAI, drawCard, calculateCost, checkGameOver, cancelSummon, confirmSummon, confirmPlacement, performRefreshStep, takeLifeDamage, declareBlock, initiateSummon, selectCoreForPlacement, selectCoreForPayment, handleSpiritClick, enterFlashTiming, passFlash, initiateMagicPayment, confirmMagicPayment, cancelMagicPayment, initiateDiscard, selectCardForDiscard, confirmDiscard, confirmCoreRemoval, cancelCoreRemoval } from './actions.js';
 
 let gameState;
 
@@ -28,11 +29,15 @@ const callbacks = {
     onUseMagic: (cardUid, timing) => {
         initiateMagicPayment(cardUid, timing, gameState);
         updateUI(gameState, callbacks);
+    },
+    onSelectCardForDiscard: (cardUid) => {
+        selectCardForDiscard(cardUid, gameState);
+        updateUI(gameState, callbacks);
     }
 };
 
 function advancePhase() {
-    if (gameState.turn !== 'player' || gameState.summoningState.isSummoning || gameState.placementState.isPlacing || gameState.attackState.isAttacking || gameState.flashState.isActive) return;
+    if (gameState.turn !== 'player' || gameState.summoningState.isSummoning || gameState.placementState.isPlacing || gameState.attackState.isAttacking || gameState.flashState.isActive || gameState.discardState.isDiscarding) return;
 
     if (gameState.phase === 'attack' && !gameState.attackState.isAttacking) {
         endTurn();
@@ -65,18 +70,53 @@ function startPlayerTurn() {
     }, 500);
     setTimeout(() => {
         gameState.phase = 'draw';
+        
+        let extraDraws = 0;
+        gameState.player.field.forEach(card => {
+            if (card.id === 'nexus-burning-canyon') {
+                const nexusLevel = getCardLevel(card).level;
+                if (nexusLevel >= 1) {
+                    extraDraws++;
+                }
+            }
+        });
+
         drawCard('player', gameState);
+        if (gameState.gameover) {
+            updateUI(gameState, callbacks);
+            return; 
+        }
+
+        for(let i = 0; i < extraDraws; i++) {
+            drawCard('player', gameState);
+            if (gameState.gameover) {
+                updateUI(gameState, callbacks);
+                return;
+            }
+        }
+
+        if (extraDraws > 0) {
+            initiateDiscard(extraDraws, gameState);
+        }
+        
         updateUI(gameState, callbacks);
+
+        if (!gameState.discardState.isDiscarding) {
+            setTimeout(proceedToRefresh, 500);
+        }
     }, 1000);
+}
+
+function proceedToRefresh() {
     setTimeout(() => {
         gameState.phase = 'refresh';
         performRefreshStep('player', gameState);
         updateUI(gameState, callbacks);
-    }, 1500);
+    }, 500);
     setTimeout(() => {
         gameState.phase = 'main';
         updateUI(gameState, callbacks);
-    }, 2000);
+    }, 1000);
 }
 
 function runAiTurn() {
@@ -90,6 +130,10 @@ function runAiTurn() {
     setTimeout(() => {
         gameState.phase = 'draw';
         drawCard('opponent', gameState);
+        if (gameState.gameover) {
+            updateUI(gameState, callbacks);
+            return;
+        }
         updateUI(gameState, callbacks);
     }, 1000);
     setTimeout(() => {
@@ -116,7 +160,7 @@ function aiAttackStep(isNewAttackDeclaration) {
     if (isNewAttackDeclaration) {
         const attackers = gameState.opponent.field.filter(s => !s.isExhausted);
         if (attackers.length > 0) {
-            attackers.sort((a, b) => getSpiritLevelAndBP(b).bp - getSpiritLevelAndBP(a).bp);
+            attackers.sort((a, b) => getSpiritLevelAndBP(b, 'opponent', gameState).bp - getSpiritLevelAndBP(a, 'opponent', gameState).bp);
             const attacker = attackers[0];
             
             attacker.isExhausted = true;
@@ -162,8 +206,9 @@ function initializeGame() {
         placementState: { isPlacing: false, targetSpiritUid: null },
         attackState: { isAttacking: false, attackerUid: null, defender: null, blockerUid: null },
         flashState: { isActive: false, timing: null, priority: 'player', hasPassed: { player: false, opponent: false } },
-        // *** FIXED: Renamed flashPaymentState to magicPaymentState ***
         magicPaymentState: { isPaying: false, cardToUse: null, costToPay: 0, selectedCores: [], timing: null },
+        discardState: { isDiscarding: false, count: 0, cardToDiscard: null },
+        coreRemovalConfirmationState: { isConfirming: false, coreId: null, from: null, sourceUid: null },
         player: { life: 5, deck: createDeck(), hand: [], field: [], reserve: [], costTrash: [], cardTrash: [] },
         opponent: { life: 5, deck: createDeck(), hand: [], field: [], reserve: [], costTrash: [], cardTrash: [] }
     };
@@ -264,47 +309,81 @@ confirmMagicBtn.addEventListener('click', () => {
     }
 });
 
+confirmDiscardBtn.addEventListener('click', () => {
+    if (confirmDiscard(gameState)) {
+        updateUI(gameState, callbacks);
+        if (!gameState.discardState.isDiscarding) {
+            proceedToRefresh();
+        }
+    }
+});
+
+confirmCoreRemovalBtn.addEventListener('click', () => {
+    if (confirmCoreRemoval(gameState)) {
+        updateUI(gameState, callbacks);
+    }
+});
+cancelCoreRemovalBtn.addEventListener('click', () => {
+    cancelCoreRemoval(gameState);
+    updateUI(gameState, callbacks);
+});
+
 function delegateClick(event) {
     const cardEl = event.target.closest('.card');
     const coreEl = event.target.closest('.core');
-    const isPayingForSomething = gameState.summoningState.isSummoning || gameState.magicPaymentState.isPaying;
-    const isActionableTurn = gameState.turn === 'player' && !isPayingForSomething && !gameState.placementState.isPlacing;
 
-    if (cardEl && isActionableTurn) {
+    if (coreEl) {
+        const isPayingForSomething = gameState.summoningState.isSummoning || gameState.magicPaymentState.isPaying;
+        const coreId = coreEl.id;
+        const parentCardEl = coreEl.closest('.card');
+        const from = parentCardEl ? 'field' : 'reserve';
+        const spiritUid = parentCardEl ? parentCardEl.id : null;
+
+        if (isPayingForSomething) {
+            callbacks.onSelectCoreForPayment(coreId, from, spiritUid);
+        } else if (gameState.placementState.isPlacing) {
+            callbacks.onSelectCoreForPlacement(coreId, from, spiritUid);
+        }
+        return;
+    }
+
+    if (cardEl) {
         const cardId = cardEl.id;
         const cardDataInHand = gameState.player.hand.find(c => c.uid === cardId);
         const cardDataOnField = gameState.player.field.find(c => c.uid === cardId);
 
         if (cardDataInHand) {
-            const isMainStep = gameState.phase === 'main';
-            const isFlashTiming = gameState.flashState.isActive && gameState.flashState.priority === 'player';
-            
-            const canUseFlashEffect = cardDataInHand.effects?.flash;
-            const canUseMainEffect = cardDataInHand.effects?.main;
-
-            if (isFlashTiming && canUseFlashEffect) {
-                callbacks.onUseMagic(cardId, 'flash');
-            } else if (isMainStep && cardDataInHand.type === 'Magic') {
-                if (canUseMainEffect) {
-                    callbacks.onUseMagic(cardId, 'main');
-                } else if (canUseFlashEffect) {
-                    callbacks.onUseMagic(cardId, 'flash');
-                }
-            } else if (isMainStep && (cardDataInHand.type === 'Spirit' || cardDataInHand.type === 'Nexus')){
-                callbacks.onInitiateSummon(cardId);
+            if (gameState.discardState.isDiscarding && gameState.turn === 'player') {
+                callbacks.onSelectCardForDiscard(cardId);
+                return;
             }
-        } else if (cardDataOnField) {
+
+            const isPlayerTurn = gameState.turn === 'player';
+            const isPaying = gameState.summoningState.isSummoning || gameState.magicPaymentState.isPaying;
+            const isPlacing = gameState.placementState.isPlacing;
+            
+            if (isPlayerTurn && !isPaying && !isPlacing) {
+                const isMainStep = gameState.phase === 'main';
+                const isFlashTiming = gameState.flashState.isActive && gameState.flashState.priority === 'player';
+                
+                const canUseFlashEffect = cardDataInHand.effects?.some(e => e.timing === 'flash');
+                const canUseMainEffect = cardDataInHand.effects?.some(e => e.timing === 'main');
+
+                if (isFlashTiming && canUseFlashEffect) {
+                    callbacks.onUseMagic(cardId, 'flash');
+                } else if (isMainStep && cardDataInHand.type === 'Magic') {
+                    if (canUseMainEffect) {
+                        callbacks.onUseMagic(cardId, 'main');
+                    } else if (canUseFlashEffect) {
+                        callbacks.onUseMagic(cardId, 'flash');
+                    }
+                } else if (isMainStep && (cardDataInHand.type === 'Spirit' || cardDataInHand.type === 'Nexus')){
+                    callbacks.onInitiateSummon(cardId);
+                }
+            }
+        } 
+        else if (cardDataOnField) {
             callbacks.onSpiritClick(cardDataOnField);
-        }
-    } else if (coreEl) {
-        const coreId = coreEl.id;
-        const parentCardEl = coreEl.closest('.card');
-        const from = parentCardEl ? 'field' : 'reserve';
-        const spiritUid = parentCardEl ? parentCardEl.id : null;
-        if (isPayingForSomething) {
-            callbacks.onSelectCoreForPayment(coreId, from, spiritUid);
-        } else if (gameState.placementState.isPlacing) {
-             callbacks.onSelectCoreForPlacement(coreId, from, spiritUid);
         }
     }
 }

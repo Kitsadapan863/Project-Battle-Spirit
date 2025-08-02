@@ -149,6 +149,17 @@
         </div>
     </div>
   </div>
+
+    <div id="discard-overlay" class="modal-overlay">
+    <div class="modal-content discard-modal">
+        <h3 id="discard-title">Discard Phase</h3>
+        <p id="discard-prompt">Please select a card from your hand to discard.</p>
+        <div class="discard-buttons">
+            <button id="confirm-discard-btn" disabled>Confirm Discard</button>
+        </div>
+    </div>
+  </div>
+
   <div id="card-trash-modal" class="modal-overlay">
     <div class="modal-content trash-viewer-modal">
         <h3 id="card-trash-viewer-title">Your Card Trash</h3>
@@ -161,6 +172,17 @@
         <h3 id="opponent-card-trash-viewer-title">Opponent's Card Trash</h3>
         <div id="opponent-card-trash-viewer-container" class="card-container"></div>
         <button id="close-opponent-trash-viewer-btn">Close</button>
+    </div>
+  </div>
+
+    <div id="core-removal-confirmation-overlay" class="modal-overlay">
+    <div class="modal-content confirmation-modal">
+        <h3 id="core-removal-title">Confirm Action</h3>
+        <p id="core-removal-prompt">Removing the last core will destroy this Spirit. Are you sure?</p>
+        <div class="confirmation-buttons">
+            <button id="confirm-core-removal-btn">Confirm</button>
+            <button id="cancel-core-removal-btn">Cancel</button>
+        </div>
     </div>
   </div>
 

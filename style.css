@@ -608,6 +608,17 @@ body {
     100% { box-shadow: 0 0 5px gold; }
 }
 
+/* NEW: Style for cards that can be discarded */
+.card.can-discard {
+    border-color: #ff4500;
+    box-shadow: 0 0 15px #ff4500;
+}
+.card.selected-for-discard {
+    transform: translateY(-10px) scale(1.08);
+    border-color: red;
+    box-shadow: 0 0 20px red;
+}
+
 .flash-modal {
     padding: 25px;
     width: 360px;
@@ -629,15 +640,29 @@ body {
     cursor: pointer;
 }
 
-#pass-flash-btn {
+/* NEW: Styles for Discard Modal */
+.discard-modal {
+    padding: 25px;
+    width: 360px;
+    border-color: #ff4500;
+}
+.discard-modal h3 {
+    color: #ff4500;
+}
+.discard-buttons button {
     padding: 10px 20px;
     font-size: 1rem;
-    background: linear-gradient(45deg, #6c757d, #5a6268);
     color: white;
     border: none;
     border-radius: 8px;
     cursor: pointer;
+    background: linear-gradient(45deg, #28a745, #20c997);
 }
+.discard-buttons button:disabled {
+    background: #555;
+    cursor: not-allowed;
+}
+
 
 /* NEW: Style for the Card Trash Viewer Modal */
 .trash-viewer-modal {
@@ -693,4 +718,47 @@ body {
     border-radius: 8px;
     cursor: pointer;
     align-self: center;
+}
+
+/* (โค้ดส่วนอื่น ๆ เหมือนเดิม)... */
+#close-opponent-trash-viewer-btn {
+    margin-top: 15px;
+    padding: 10px 20px;
+    font-size: 1rem;
+    background: linear-gradient(45deg, #6c757d, #5a6268);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    align-self: center;
+}
+
+/* NEW: Styles for the confirmation modal */
+.confirmation-modal {
+    padding: 25px;
+    width: 380px;
+    border-color: #ffc107;
+}
+.confirmation-modal h3 {
+    color: #ffc107;
+}
+.confirmation-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 20px;
+}
+.confirmation-buttons button {
+    padding: 10px 20px;
+    font-size: 1rem;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    color: white;
+}
+#confirm-core-removal-btn {
+    background: linear-gradient(45deg, #dc3545, #c82333);
+}
+#cancel-core-removal-btn {
+    background: linear-gradient(45deg, #6c757d, #5a6268);
 }
