@@ -48,15 +48,15 @@ export const flashOverlay = document.getElementById('flash-overlay');
 export const flashTitle = document.getElementById('flash-title');
 export const flashPrompt = document.getElementById('flash-prompt');
 export const passFlashBtn = document.getElementById('pass-flash-btn');
-export const flashPaymentOverlay = document.getElementById('flash-payment-overlay');
-export const flashPaymentTitle = document.getElementById('flash-payment-title');
-export const flashPaymentCostValue = document.getElementById('flash-payment-cost-value');
-export const flashPaymentSelectedValue = document.getElementById('flash-payment-selected-value');
-export const confirmFlashBtn = document.getElementById('confirm-flash-btn');
-export const cancelFlashBtn = document.getElementById('cancel-flash-btn');
+export const magicPaymentOverlay = document.getElementById('magic-payment-overlay');
+export const magicPaymentTitle = document.getElementById('magic-payment-title');
+export const magicPaymentCostValue = document.getElementById('magic-payment-cost-value');
+export const magicPaymentSelectedValue = document.getElementById('magic-payment-selected-value');
+export const confirmMagicBtn = document.getElementById('confirm-magic-btn');
+export const cancelMagicBtn = document.getElementById('cancel-magic-btn');
 
 
-// *** FIXED: Added 'owner' parameter to correctly apply can-block class ***
+// *** FIXED: Corrected highlighting logic for Flash cards in Main Step ***
 function createCardElement(cardData, location, owner, gameState, callbacks) {
     const cardDiv = document.createElement('div');
     cardDiv.className = 'card';
@@ -64,15 +64,34 @@ function createCardElement(cardData, location, owner, gameState, callbacks) {
     cardDiv.innerHTML = `<img src="${cardData.image}" alt="${cardData.name}" draggable="false"/>`;
 
     if (location === 'hand') {
-        const canUseFlash = gameState.flashState.isActive && cardData.hasFlash && gameState.flashState.priority === 'player';
-        if (canUseFlash) {
+        const isPlayerTurn = gameState.turn === 'player';
+        const isMainStep = gameState.phase === 'main';
+        const isFlashTiming = gameState.flashState.isActive && gameState.flashState.priority === 'player';
+        
+        const canUseFlash = cardData.effects?.flash;
+        const canUseMain = cardData.effects?.main;
+
+        // Highlight for Flash Timing
+        if (isFlashTiming && canUseFlash) {
             cardDiv.classList.add('can-flash');
+        } 
+        // Highlight for Main Step (can use Main or Flash)
+        else if (isPlayerTurn && isMainStep && cardData.type === 'Magic' && (canUseMain || canUseFlash)) {
+            cardDiv.classList.add('can-main'); 
         }
+
         cardDiv.addEventListener('click', () => {
-            if(canUseFlash){
-                 callbacks.onUseFlash(cardData.uid)
-            } else if ((cardData.type === 'Spirit' || cardData.type === 'Nexus') && gameState.phase === 'main' && gameState.turn === 'player'){
-                callbacks.onInitiateSummon(cardData.uid)
+            if (isFlashTiming && canUseFlash){
+                callbacks.onUseMagic(cardData.uid, 'flash');
+            } else if (isPlayerTurn && isMainStep && cardData.type === 'Magic') {
+                // In main step, prefer 'main' effect, but allow 'flash' if it's the only option
+                if (canUseMain) {
+                    callbacks.onUseMagic(cardData.uid, 'main');
+                } else if (canUseFlash) {
+                    callbacks.onUseMagic(cardData.uid, 'flash');
+                }
+            } else if (isPlayerTurn && isMainStep && (cardData.type === 'Spirit' || cardData.type === 'Nexus')){
+                callbacks.onInitiateSummon(cardData.uid);
             }
         });
 
@@ -120,15 +139,15 @@ function createCoreElement(coreData, locationInfo, gameState, callbacks) {
     coreDiv.className = 'core';
     coreDiv.id = coreData.id;
     const isSummoning = gameState.summoningState.isSummoning;
-    const isPayingForFlash = gameState.flashPaymentState.isPaying;
+    const isPayingForMagic = gameState.magicPaymentState.isPaying;
     const isPlacing = gameState.placementState.isPlacing;
     if (locationInfo.type === 'trash') {
         coreDiv.draggable = false;
         return coreDiv;
     }
-    if (isSummoning || isPayingForFlash) {
+    if (isSummoning || isPayingForMagic) {
         coreDiv.draggable = false;
-        const paymentState = isSummoning ? gameState.summoningState : gameState.flashPaymentState;
+        const paymentState = isSummoning ? gameState.summoningState : gameState.magicPaymentState;
         const isSelected = paymentState.selectedCores.some(c => c.coreId === coreData.id);
         coreDiv.classList.add('selectable-for-payment');
         if (isSelected) {
@@ -156,9 +175,10 @@ function createCoreElement(coreData, locationInfo, gameState, callbacks) {
     return coreDiv;
 }
 
+
 export function updateUI(gameState, callbacks) {
     if (!gameState) return;
-    const { summoningState, placementState, attackState, flashState, flashPaymentState } = gameState;
+    const { summoningState, placementState, attackState, flashState, magicPaymentState } = gameState;
 
     if (summoningState.isSummoning) {
         summonPaymentOverlay.classList.add('visible');
@@ -170,14 +190,14 @@ export function updateUI(gameState, callbacks) {
         summonPaymentOverlay.classList.remove('visible');
     }
 
-    if (flashPaymentState.isPaying) {
-        flashPaymentOverlay.classList.add('visible');
-        flashPaymentTitle.textContent = `Use Magic: ${flashPaymentState.cardToUse.name}`;
-        flashPaymentCostValue.textContent = flashPaymentState.costToPay;
-        flashPaymentSelectedValue.textContent = flashPaymentState.selectedCores.length;
-        confirmFlashBtn.disabled = flashPaymentState.selectedCores.length < flashPaymentState.costToPay;
+    if (magicPaymentState.isPaying) {
+        magicPaymentOverlay.classList.add('visible');
+        magicPaymentTitle.textContent = `Use Magic: ${magicPaymentState.cardToUse.name}`;
+        magicPaymentCostValue.textContent = magicPaymentState.costToPay;
+        magicPaymentSelectedValue.textContent = magicPaymentState.selectedCores.length;
+        confirmMagicBtn.disabled = magicPaymentState.selectedCores.length < magicPaymentState.costToPay;
     } else {
-        flashPaymentOverlay.classList.remove('visible');
+        magicPaymentOverlay.classList.remove('visible');
     }
 
     if (placementState.isPlacing) {
@@ -201,7 +221,7 @@ export function updateUI(gameState, callbacks) {
         defenseOverlay.classList.remove('visible');
     }
 
-    if (flashState.isActive && !flashPaymentState.isPaying) {
+    if (flashState.isActive && !magicPaymentState.isPaying) {
         flashOverlay.classList.add('visible');
         flashTitle.textContent = `Flash Timing (${flashState.priority}'s Priority)`;
     } else {
@@ -345,7 +365,7 @@ export function updateUI(gameState, callbacks) {
     
     turnIndicator.textContent = gameState.turn === 'player' ? "Your Turn" : "Opponent's Turn";
     turnIndicator.style.color = gameState.turn === 'player' ? '#00d2ff' : '#ff4141';
-    phaseBtn.disabled = gameState.turn !== 'player' || summoningState.isSummoning || placementState.isPlacing || (attackState.isAttacking && attackState.defender === 'player') || flashState.isActive || flashPaymentState.isPaying;
+    phaseBtn.disabled = gameState.turn !== 'player' || summoningState.isSummoning || placementState.isPlacing || (attackState.isAttacking && attackState.defender === 'player') || flashState.isActive || magicPaymentState.isPaying;
     
     attachDragAndDropListeners(gameState, callbacks);
 

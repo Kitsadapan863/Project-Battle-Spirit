@@ -1,30 +1,24 @@
 // js/actions.js
 import { getSpiritLevelAndBP, getCardLevel } from './utils.js';
 
-// NEW: Centralized function for destroying any card on the field
 function destroyCard(cardUid, ownerKey, gameState) {
     const owner = gameState[ownerKey];
     const cardIndex = owner.field.findIndex(c => c.uid === cardUid);
 
-    if (cardIndex === -1) return; // Card not found
+    if (cardIndex === -1) return;
 
     const [destroyedCard] = owner.field.splice(cardIndex, 1);
 
-    // Move all cores from the destroyed card to the owner's reserve
     if (destroyedCard.cores && destroyedCard.cores.length > 0) {
         owner.reserve.push(...destroyedCard.cores);
-        destroyedCard.cores = []; // Clear cores from the card object
+        destroyedCard.cores = [];
     }
 
-    // Move the card to the trash
     owner.cardTrash.push(destroyedCard);
     console.log(`Destroyed: ${ownerKey}'s ${destroyedCard.name}`);
 }
 
-
-// FIXED: Now uses the new destroyCard function
 function cleanupField(gameState) {
-    // We need to loop backwards when removing items from an array to avoid skipping elements
     for (let i = gameState.player.field.length - 1; i >= 0; i--) {
         const card = gameState.player.field[i];
         if (card.type === 'Spirit' && card.cores.length === 0) {
@@ -201,7 +195,7 @@ export function initiateSummon(cardUid, gameState) {
 }
 
 export function selectCoreForPayment(coreId, from, spiritUid, gameState) {
-    const paymentState = gameState.summoningState.isSummoning ? gameState.summoningState : gameState.flashPaymentState.isPaying ? gameState.flashPaymentState : null;
+    const paymentState = gameState.summoningState.isSummoning ? gameState.summoningState : gameState.magicPaymentState.isPaying ? gameState.magicPaymentState : null;
     if (!paymentState) return;
 
     const { selectedCores, costToPay } = paymentState;
@@ -281,7 +275,6 @@ export function confirmPlacement(gameState) {
     gameState.placementState = { isPlacing: false, targetSpiritUid: null };
 }
 
-// FIXED: Now uses the new destroyCard function
 function resolveBattle(gameState) {
     const { attackerUid, blockerUid } = gameState.attackState;
     const attackerOwner = gameState.player.field.some(s => s.uid === attackerUid) ? 'player' : 'opponent';
@@ -396,34 +389,45 @@ export function resolveFlashWindow(gameState) {
     return null;
 }
 
-export function initiateFlashPayment(cardUid, gameState) {
-    if (!gameState.flashState.isActive || gameState.flashState.priority !== 'player') return;
+// *** FIXED: Corrected timing validation logic for using magic cards ***
+export function initiateMagicPayment(cardUid, timing, gameState) {
     const cardToUse = gameState.player.hand.find(c => c.uid === cardUid);
     if (!cardToUse) return;
+
+    const isFlashTiming = gameState.flashState.isActive && gameState.flashState.priority === 'player';
+    const isMainStep = gameState.phase === 'main';
+
+    // Check if the card has the effect for the intended timing
+    if (!cardToUse.effects || !cardToUse.effects[timing]) return;
+
+    // Check if the timing is valid
+    if (timing === 'flash' && !isFlashTiming && !isMainStep) return;
+    if (timing === 'main' && !isMainStep) return;
 
     const finalCost = calculateCost(cardToUse, 'player', gameState);
     const totalAvailableCores = gameState.player.reserve.length + gameState.player.field.reduce((sum, card) => sum + card.cores.length, 0);
 
     if (totalAvailableCores < finalCost) {
-        console.log("Not enough available cores to use flash magic.");
+        console.log("Not enough available cores to use magic.");
         return;
     }
 
-    gameState.flashPaymentState = {
+    gameState.magicPaymentState = {
         isPaying: true,
         cardToUse: cardToUse,
         costToPay: finalCost,
-        selectedCores: []
+        selectedCores: [],
+        timing: timing
     };
 }
 
-export function cancelFlashPayment(gameState) {
-    if (!gameState.flashPaymentState.isPaying) return;
-    gameState.flashPaymentState = { isPaying: false, cardToUse: null, costToPay: 0, selectedCores: [] };
+export function cancelMagicPayment(gameState) {
+    if (!gameState.magicPaymentState.isPaying) return;
+    gameState.magicPaymentState = { isPaying: false, cardToUse: null, costToPay: 0, selectedCores: [], timing: null };
 }
 
-export function confirmFlashPayment(gameState) {
-    const { isPaying, cardToUse, costToPay, selectedCores } = gameState.flashPaymentState;
+export function confirmMagicPayment(gameState) {
+    const { isPaying, cardToUse, costToPay, selectedCores, timing } = gameState.magicPaymentState;
     if (!isPaying || selectedCores.length < costToPay) return false;
 
     for (const coreInfo of selectedCores) {
@@ -447,11 +451,14 @@ export function confirmFlashPayment(gameState) {
     const [usedCard] = gameState.player.hand.splice(cardIndex, 1);
     gameState.player.cardTrash.push(usedCard);
     
-    console.log(`Used Flash Magic: ${usedCard.name}`);
+    console.log(`Used Magic: ${usedCard.name} (${timing})`);
 
-    gameState.flashPaymentState = { isPaying: false, cardToUse: null, costToPay: 0, selectedCores: [] };
-    gameState.flashState.hasPassed = { player: false, opponent: false };
-    gameState.flashState.priority = 'opponent';
+    gameState.magicPaymentState = { isPaying: false, cardToUse: null, costToPay: 0, selectedCores: [], timing: null };
+
+    if (timing === 'flash') {
+        gameState.flashState.hasPassed = { player: false, opponent: false };
+        gameState.flashState.priority = 'opponent';
+    }
 
     return true;
 }

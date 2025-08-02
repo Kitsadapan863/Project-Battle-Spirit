@@ -87,10 +87,11 @@ export const allCards = [
         symbol_cost:{"white":1},
         type: 'Magic',
         color: 'white',
-        hasFlash: true,
-        effects: ['[Flash]: End the Attack Step.'],
+        effects: {
+            flash: '[Flash]: End the Attack Step.'
+        },
     },
-        {
+    {
         id: 'magic-brave-draw',
         name: 'Brave Draw',
         image: '../images/Brave Draw.webp',
@@ -98,10 +99,12 @@ export const allCards = [
         symbol_cost:{"red":3},
         type: 'Magic',
         color: 'red',
-        hasFlash: true,
-        effects: ['[Main]: Draw 2 cards from your deck.', '[Flash]: During this battle, 1 of your Spirits gets +2000 BP.'],
+        effects: {
+            main: '[Main]: Draw 2 cards from your deck.',
+            flash: '[Flash]: During this battle, 1 of your Spirits gets +2000 BP.'
+        },
     },
-        {
+    {
         id: 'magic-ice-age-shield',
         name: 'Ice Age Shield',
         image: '../images/Ice Age Shield.webp',
@@ -109,10 +112,11 @@ export const allCards = [
         symbol_cost:{"white":1},
         type: 'Magic',
         color: 'white',
-        hasFlash: true,
-        effects: ['[Flash]: End the Attack Step.'],
+        effects: {
+            flash: '[Flash]: End the Attack Step.'
+        },
     },
-        {
+    {
         id: 'magic-brave-draw',
         name: 'Brave Draw',
         image: '../images/Brave Draw.webp',
@@ -120,30 +124,10 @@ export const allCards = [
         symbol_cost:{"red":3},
         type: 'Magic',
         color: 'red',
-        hasFlash: true,
-        effects: ['[Main]: Draw 2 cards from your deck.', '[Flash]: During this battle, 1 of your Spirits gets +2000 BP.'],
-    },
-        {
-        id: 'magic-ice-age-shield',
-        name: 'Ice Age Shield',
-        image: '../images/Ice Age Shield.webp',
-        cost: 2,
-        symbol_cost:{"white":1},
-        type: 'Magic',
-        color: 'white',
-        hasFlash: true,
-        effects: ['[Flash]: End the Attack Step.'],
-    },
-        {
-        id: 'magic-brave-draw',
-        name: 'Brave Draw',
-        image: '../images/Brave Draw.webp',
-        cost: 5,
-        symbol_cost:{"red":3},
-        type: 'Magic',
-        color: 'red',
-        hasFlash: true,
-        effects: ['[Main]: Draw 2 cards from your deck.', '[Flash]: During this battle, 1 of your Spirits gets +2000 BP.'],
+        effects: {
+            main: '[Main]: Draw 2 cards from your deck.',
+            flash: '[Flash]: During this battle, 1 of your Spirits gets +2000 BP.'
+        },
     },
     // *** NEW: Nexus Card ***
     {

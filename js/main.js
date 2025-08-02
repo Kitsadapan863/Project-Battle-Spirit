@@ -1,9 +1,8 @@
 // js/main.js
 import { allCards } from './cards.js';
-// FIXED: Import new UI elements
-import { updateUI, phaseBtn, restartBtn, cancelSummonBtn, confirmSummonBtn, confirmPlacementBtn, gameOverModal, takeDamageBtn, playerHandContainer, playerFieldElement, playerReserveCoreContainer, passFlashBtn, confirmFlashBtn, cancelFlashBtn, cardTrashModal, closeTrashViewerBtn, playerCardTrashZone, opponentCardTrashZone, opponentCardTrashModal, closeOpponentTrashViewerBtn } from './ui.js';
+import { updateUI, phaseBtn, restartBtn, cancelSummonBtn, confirmSummonBtn, confirmPlacementBtn, gameOverModal, takeDamageBtn, playerHandContainer, playerFieldElement, playerReserveCoreContainer, passFlashBtn, confirmMagicBtn, cancelMagicBtn, cardTrashModal, closeTrashViewerBtn, playerCardTrashZone, opponentCardTrashZone, opponentCardTrashModal, closeOpponentTrashViewerBtn } from './ui.js';
 import { getSpiritLevelAndBP } from './utils.js';
-import { summonSpiritAI, drawCard, calculateCost, checkGameOver, cancelSummon, confirmSummon, confirmPlacement, performRefreshStep, takeLifeDamage, declareBlock, initiateSummon, selectCoreForPlacement, selectCoreForPayment, handleSpiritClick, enterFlashTiming, passFlash, initiateFlashPayment, confirmFlashPayment, cancelFlashPayment } from './actions.js';
+import { summonSpiritAI, drawCard, calculateCost, checkGameOver, cancelSummon, confirmSummon, confirmPlacement, performRefreshStep, takeLifeDamage, declareBlock, initiateSummon, selectCoreForPlacement, selectCoreForPayment, handleSpiritClick, enterFlashTiming, passFlash, initiateMagicPayment, confirmMagicPayment, cancelMagicPayment } from './actions.js';
 
 let gameState;
 
@@ -26,8 +25,8 @@ const callbacks = {
         selectCoreForPlacement(coreId, from, spiritUid, gameState);
         updateUI(gameState, callbacks);
     },
-    onUseFlash: (cardUid) => {
-        initiateFlashPayment(cardUid, gameState);
+    onUseMagic: (cardUid, timing) => {
+        initiateMagicPayment(cardUid, timing, gameState);
         updateUI(gameState, callbacks);
     }
 };
@@ -36,7 +35,6 @@ function advancePhase() {
     if (gameState.turn !== 'player' || gameState.summoningState.isSummoning || gameState.placementState.isPlacing || gameState.attackState.isAttacking || gameState.flashState.isActive) return;
 
     if (gameState.phase === 'attack' && !gameState.attackState.isAttacking) {
-        // If player is in attack step but hasn't declared an attacker, end turn
         endTurn();
     } else {
         switch (gameState.phase) {
@@ -125,9 +123,6 @@ function aiAttackStep(isNewAttackDeclaration) {
             gameState.attackState = { isAttacking: true, attackerUid: attacker.uid, defender: 'player' };
             enterFlashTiming(gameState, 'beforeBlock');
             updateUI(gameState, callbacks);
-
-            // After AI attacks, it's player's priority. Game waits for player input.
-            // But AI should decide its action if player passes back to it.
         } else {
             setTimeout(endAiTurn, 500);
         }
@@ -167,7 +162,8 @@ function initializeGame() {
         placementState: { isPlacing: false, targetSpiritUid: null },
         attackState: { isAttacking: false, attackerUid: null, defender: null, blockerUid: null },
         flashState: { isActive: false, timing: null, priority: 'player', hasPassed: { player: false, opponent: false } },
-        flashPaymentState: { isPaying: false, cardToUse: null, costToPay: 0, selectedCores: [] },
+        // *** FIXED: Renamed flashPaymentState to magicPaymentState ***
+        magicPaymentState: { isPaying: false, cardToUse: null, costToPay: 0, selectedCores: [], timing: null },
         player: { life: 5, deck: createDeck(), hand: [], field: [], reserve: [], costTrash: [], cardTrash: [] },
         opponent: { life: 5, deck: createDeck(), hand: [], field: [], reserve: [], costTrash: [], cardTrash: [] }
     };
@@ -206,46 +202,35 @@ takeDamageBtn.addEventListener('click', () => {
     setTimeout(() => aiAttackStep(true), 500);
 });
 
-// NEW: Card Trash Viewer Listeners
 playerCardTrashZone.addEventListener('click', () => {
     cardTrashModal.classList.add('visible');
 });
-
-// NEW: Opponent's trash is now viewable
 opponentCardTrashZone.addEventListener('click', () => { 
     opponentCardTrashModal.classList.add('visible');
 });
-
-// NEW: Close button for opponent's trash viewer
 closeOpponentTrashViewerBtn.addEventListener('click', () => {
     opponentCardTrashModal.classList.remove('visible');
 });
-
 closeTrashViewerBtn.addEventListener('click', () => {
     cardTrashModal.classList.remove('visible');
 });
 
-// *** FIXED: Simplified passFlashBtn logic for new action flow ***
 passFlashBtn.addEventListener('click', () => {
     const resolutionStatus = passFlash(gameState);
     updateUI(gameState, callbacks);
 
     if (!gameState.flashState.isActive) {
-        // Window is now closed
         if (resolutionStatus === 'battle_resolved') {
             setTimeout(() => aiAttackStep(true), 500);
         }
         return;
     }
 
-    // If window is still open, it is now the AI's turn to act.
-    // The AI will always pass for now.
     if (gameState.flashState.priority === 'opponent') {
         setTimeout(() => {
-            const finalResolutionStatus = passFlash(gameState); // AI passes
+            const finalResolutionStatus = passFlash(gameState);
             updateUI(gameState, callbacks);
 
-            // Check if the AI's pass closed the window
             if (!gameState.flashState.isActive) {
                 if (finalResolutionStatus === 'battle_resolved') {
                     setTimeout(() => aiAttackStep(true), 500);
@@ -255,37 +240,34 @@ passFlashBtn.addEventListener('click', () => {
     }
 });
 
-
-cancelFlashBtn.addEventListener('click', () => {
-    cancelFlashPayment(gameState);
+cancelMagicBtn.addEventListener('click', () => {
+    cancelMagicPayment(gameState);
     updateUI(gameState, callbacks);
 });
 
-// *** FIXED: Simplified confirmFlashBtn logic ***
-confirmFlashBtn.addEventListener('click', () => {
-    if (confirmFlashPayment(gameState)) {
+confirmMagicBtn.addEventListener('click', () => {
+    if (confirmMagicPayment(gameState)) {
         updateUI(gameState, callbacks);
+        
+        if (gameState.flashState.isActive) {
+            setTimeout(() => {
+                const resolutionStatus = passFlash(gameState);
+                updateUI(gameState, callbacks);
 
-        // After player uses flash, it's AI's turn. AI will pass.
-        setTimeout(() => {
-            const resolutionStatus = passFlash(gameState); // AI passes
-            updateUI(gameState, callbacks);
-
-            // Now it is the player's priority again. The game will wait for player input.
-            if (!gameState.flashState.isActive) {
-                 if (resolutionStatus === 'battle_resolved') {
-                     setTimeout(() => aiAttackStep(true), 500);
+                if (!gameState.flashState.isActive) {
+                     if (resolutionStatus === 'battle_resolved') {
+                         setTimeout(() => aiAttackStep(true), 500);
+                    }
                 }
-            }
-        }, 500);
+            }, 500);
+        }
     }
 });
-
 
 function delegateClick(event) {
     const cardEl = event.target.closest('.card');
     const coreEl = event.target.closest('.core');
-    const isPayingForSomething = gameState.summoningState.isSummoning || gameState.flashPaymentState.isPaying;
+    const isPayingForSomething = gameState.summoningState.isSummoning || gameState.magicPaymentState.isPaying;
     const isActionableTurn = gameState.turn === 'player' && !isPayingForSomething && !gameState.placementState.isPlacing;
 
     if (cardEl && isActionableTurn) {
@@ -294,9 +276,21 @@ function delegateClick(event) {
         const cardDataOnField = gameState.player.field.find(c => c.uid === cardId);
 
         if (cardDataInHand) {
-            if (cardDataInHand.hasFlash && gameState.flashState.isActive && gameState.flashState.priority === 'player') {
-                callbacks.onUseFlash(cardId);
-            } else if (cardDataInHand.type === 'Spirit' && gameState.phase === 'main'){
+            const isMainStep = gameState.phase === 'main';
+            const isFlashTiming = gameState.flashState.isActive && gameState.flashState.priority === 'player';
+            
+            const canUseFlashEffect = cardDataInHand.effects?.flash;
+            const canUseMainEffect = cardDataInHand.effects?.main;
+
+            if (isFlashTiming && canUseFlashEffect) {
+                callbacks.onUseMagic(cardId, 'flash');
+            } else if (isMainStep && cardDataInHand.type === 'Magic') {
+                if (canUseMainEffect) {
+                    callbacks.onUseMagic(cardId, 'main');
+                } else if (canUseFlashEffect) {
+                    callbacks.onUseMagic(cardId, 'flash');
+                }
+            } else if (isMainStep && (cardDataInHand.type === 'Spirit' || cardDataInHand.type === 'Nexus')){
                 callbacks.onInitiateSummon(cardId);
             }
         } else if (cardDataOnField) {

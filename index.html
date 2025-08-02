@@ -56,7 +56,7 @@
 
     <div class="player-zone player">
       <div class="side-zone player-left-zones">
-        <div class="zone life">
+        <div class="zone life" id="player-life-zone">
           <span>Your Life</span>
           <div class="life-circles" id="player-life-circles"></div>
         </div>
@@ -94,7 +94,7 @@
     </div>
   </div>
   <div id="summon-payment-overlay" class="modal-overlay">
-      <div id="summon-payment-modal" class="modal-content payment-modal">
+      <div class="modal-content payment-modal">
           <h3 id="summon-payment-title">Summoning...</h3>
           <p id="summon-payment-prompt">Please select cores to pay the cost.</p>
           <div class="payment-details">
@@ -108,7 +108,7 @@
       </div>
   </div>
   <div id="placement-overlay" class="modal-overlay">
-    <div id="placement-modal" class="modal-content placement-modal">
+    <div class="modal-content placement-modal">
         <h3 id="placement-title">Place Cores</h3>
         <p>Select cores from your Reserve or other Spirits to place on the new Spirit.</p>
         <div class="placement-buttons">
@@ -117,7 +117,7 @@
     </div>
   </div>
   <div id="defense-overlay" class="modal-overlay">
-    <div id="defense-modal" class="modal-content defense-modal">
+    <div class="modal-content defense-modal">
         <h3 id="defense-title">Opponent is Attacking!</h3>
         <div id="defense-attacker-info"></div>
         <p>Choose a Spirit to block, or take the damage.</p>
@@ -126,22 +126,22 @@
         </div>
     </div>
   </div>
-  <div id="flash-payment-overlay" class="modal-overlay">
-      <div id="flash-payment-modal" class="modal-content payment-modal">
-          <h3 id="flash-payment-title">Use Magic</h3>
-          <p id="flash-payment-prompt">Please select cores to pay the cost.</p>
+  <div id="magic-payment-overlay" class="modal-overlay">
+      <div class="modal-content payment-modal">
+          <h3 id="magic-payment-title">Use Magic</h3>
+          <p id="magic-payment-prompt">Please select cores to pay the cost.</p>
           <div class="payment-details">
-              <span>Cost: <span id="flash-payment-cost-value">0</span></span>
-              <span>Selected: <span id="flash-payment-selected-value">0</span></span>
+              <span>Cost: <span id="magic-payment-cost-value">0</span></span>
+              <span>Selected: <span id="magic-payment-selected-value">0</span></span>
           </div>
           <div class="payment-buttons">
-              <button id="confirm-flash-btn" disabled>Confirm Payment</button>
-              <button id="cancel-flash-btn">Cancel</button>
+              <button id="confirm-magic-btn" disabled>Confirm Payment</button>
+              <button id="cancel-magic-btn">Cancel</button>
           </div>
       </div>
   </div>
   <div id="flash-overlay" class="modal-overlay">
-    <div id="flash-modal" class="modal-content flash-modal">
+    <div class="modal-content flash-modal">
         <h3 id="flash-title">Flash Timing</h3>
         <p id="flash-prompt">Do you want to use a Flash ability?</p>
         <div class="flash-buttons">
