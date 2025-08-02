@@ -381,6 +381,12 @@ export function updateUI(gameState, callbacks) {
     
     turnIndicator.textContent = gameState.turn === 'player' ? "Your Turn" : "Opponent's Turn";
     turnIndicator.style.color = gameState.turn === 'player' ? '#00d2ff' : '#ff4141';
+
+    const turnNumberElement = document.getElementById('turn-number');
+    if (turnNumberElement) {
+        turnNumberElement.textContent = gameState.gameTurn;
+    }
+    
     phaseBtn.disabled = gameState.turn !== 'player' || summoningState.isSummoning || placementState.isPlacing || (attackState.isAttacking && attackState.defender === 'player') || flashState.isActive || magicPaymentState.isPaying || discardState.isDiscarding;
     
     attachDragAndDropListeners(gameState, callbacks);

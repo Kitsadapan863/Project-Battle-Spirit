@@ -202,6 +202,7 @@ function endTurn() {
     updateUI(gameState, callbacks);
     setTimeout(() => {
         gameState.turn = 'opponent';
+        gameState.gameTurn++;
         updateUI(gameState, callbacks);
         setTimeout(runAiTurn, 500);
     }, 500);

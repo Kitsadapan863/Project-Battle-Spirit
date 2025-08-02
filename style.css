@@ -246,9 +246,6 @@ body {
   .core-container {
       display: flex;
       flex-wrap: wrap;
-      /* margin-left: 15px; */
-      /* gap: 10px; */
-      /* justify-content: center; */
       align-items: center;
       padding: 1px;
       width: 100%;
@@ -597,6 +594,8 @@ body {
 }
 .defense-buttons {
     margin-top: 20px;
+    display: flex;
+    justify-content: center;
 }
 #take-damage-btn {
     padding: 10px 20px;
@@ -773,4 +772,35 @@ body {
 }
 #cancel-core-removal-btn {
     background: linear-gradient(45deg, #6c757d, #5a6268);
+}
+
+/* Turn Counter Styles */
+.turn-counter {
+    background-color: rgba(0, 0, 0, 0.5);
+    border-radius: 10px;
+    padding: 8px 16px;
+    text-align: center;
+    width: 120px;
+    height: 70px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.turn-counter .turn-label {
+    font-size: 0.9em;
+    color: #a0aec0;
+    font-weight: bold;
+    text-transform: uppercase;
+    line-height: 1;
+}
+
+.turn-counter .turn-number-display {
+    font-size: 2.2em;
+    font-weight: bold;
+    color: #ffffff;
+    line-height: 1.1;
+    text-shadow: 0 0 8px #00d2ff;
 }
