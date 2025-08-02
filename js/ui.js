@@ -1,5 +1,5 @@
 // js/ui.js
-import { getSpiritLevelAndBP } from './utils.js';
+import { getSpiritLevelAndBP, getCardLevel } from './utils.js';
 import { attachDragAndDropListeners } from './dragDrop.js';
 
 // DOM Element Queries
@@ -22,41 +22,32 @@ export const phaseBtn = document.getElementById('phase-btn');
 export const gameOverModal = document.getElementById('game-over-modal');
 export const gameOverMessage = document.getElementById('game-over-message');
 export const restartBtn = document.getElementById('restart-btn');
-// NEW: Card Trash Viewer Modal Elements
 export const cardTrashModal = document.getElementById('card-trash-modal');
 export const cardTrashViewerTitle = document.getElementById('card-trash-viewer-title');
 export const cardTrashViewerContainer = document.getElementById('card-trash-viewer-container');
 export const closeTrashViewerBtn = document.getElementById('close-trash-viewer-btn');
-// NEW: Opponent Card Trash Viewer Modal Elements
 export const opponentCardTrashModal = document.getElementById('opponent-card-trash-modal');
 export const opponentCardTrashViewerTitle = document.getElementById('opponent-card-trash-viewer-title');
 export const opponentCardTrashViewerContainer = document.getElementById('opponent-card-trash-viewer-container');
 export const closeOpponentTrashViewerBtn = document.getElementById('close-opponent-trash-viewer-btn');
-
-
-// Summon Modal
 export const summonPaymentOverlay = document.getElementById('summon-payment-overlay');
 export const summonPaymentTitle = document.getElementById('summon-payment-title');
 export const paymentCostValue = document.getElementById('payment-cost-value');
 export const paymentSelectedValue = document.getElementById('payment-selected-value');
 export const confirmSummonBtn = document.getElementById('confirm-summon-btn');
 export const cancelSummonBtn = document.getElementById('cancel-summon-btn');
-// Placement Modal
 export const confirmPlacementBtn = document.getElementById('confirm-placement-btn');
 export const placementOverlay = document.getElementById('placement-overlay');
 export const placementTitle = document.getElementById('placement-title');
 export const phaseIndicator = document.getElementById('phase-indicator');
-// Defense Modal
 export const defenseOverlay = document.getElementById('defense-overlay');
 export const defenseTitle = document.getElementById('defense-title');
 export const defenseAttackerInfo = document.getElementById('defense-attacker-info');
 export const takeDamageBtn = document.getElementById('take-damage-btn');
-// Flash Modal
 export const flashOverlay = document.getElementById('flash-overlay');
 export const flashTitle = document.getElementById('flash-title');
 export const flashPrompt = document.getElementById('flash-prompt');
 export const passFlashBtn = document.getElementById('pass-flash-btn');
-// Flash Payment Modal
 export const flashPaymentOverlay = document.getElementById('flash-payment-overlay');
 export const flashPaymentTitle = document.getElementById('flash-payment-title');
 export const flashPaymentCostValue = document.getElementById('flash-payment-cost-value');
@@ -79,30 +70,41 @@ function createCardElement(cardData, location, gameState, callbacks) {
         cardDiv.addEventListener('click', () => {
             if(canUseFlash){
                  callbacks.onUseFlash(cardData.uid)
-            } else if (cardData.type === 'Spirit' && gameState.phase === 'main' && gameState.turn === 'player'){
+            } else if ((cardData.type === 'Spirit' || cardData.type === 'Nexus') && gameState.phase === 'main' && gameState.turn === 'player'){
                 callbacks.onInitiateSummon(cardData.uid)
             }
         });
 
     } else if (location === 'field') {
-        const { level, bp } = getSpiritLevelAndBP(cardData);
-        cardDiv.innerHTML += `
-            <div class="card-info">
-                <p>Lv${level} BP: ${bp}</p>
-            </div>
-            <div class="card-core-display"></div>
-        `;
-        if (cardData.isExhausted) {
-            cardDiv.classList.add('exhausted');
-        } else if (gameState.turn === 'player' && gameState.phase === 'attack' && !gameState.attackState.isAttacking && !gameState.summoningState.isSummoning && !gameState.placementState.isPlacing && gameState.gameTurn > 1) {
-            cardDiv.classList.add('can-attack');
+        if (cardData.type === 'Nexus') {
+            const { level } = getCardLevel(cardData);
+            cardDiv.classList.add('nexus');
+            cardDiv.innerHTML += `
+                <div class="card-info">
+                    <p>Lv${level} Nexus</p>
+                </div>
+                <div class="card-core-display"></div>
+            `;
+        } else { 
+            const { level, bp } = getSpiritLevelAndBP(cardData);
+            cardDiv.innerHTML += `
+                <div class="card-info">
+                    <p>Lv${level} BP: ${bp}</p>
+                </div>
+                <div class="card-core-display"></div>
+            `;
+            if (cardData.isExhausted) {
+                cardDiv.classList.add('exhausted');
+            } else if (gameState.turn === 'player' && gameState.phase === 'attack' && !gameState.attackState.isAttacking && !gameState.summoningState.isSummoning && !gameState.placementState.isPlacing && gameState.gameTurn > 1) {
+                cardDiv.classList.add('can-attack');
+            }
         }
         
         if (gameState.placementState.isPlacing && gameState.placementState.targetSpiritUid === cardData.uid) {
             cardDiv.classList.add('can-attack');
         }
 
-        if (gameState.attackState.isAttacking && gameState.attackState.defender === 'player' && !cardData.isExhausted && !gameState.flashState.isActive) {
+        if (cardData.type === 'Spirit' && gameState.attackState.isAttacking && gameState.attackState.defender === 'player' && !cardData.isExhausted && !gameState.flashState.isActive) {
              cardDiv.classList.add('can-block');
         }
 
@@ -152,11 +154,11 @@ function createCoreElement(coreData, locationInfo, gameState, callbacks) {
     return coreDiv;
 }
 
-
 export function updateUI(gameState, callbacks) {
     if (!gameState) return;
     const { summoningState, placementState, attackState, flashState, flashPaymentState } = gameState;
 
+    // (Modal Visibility and other UI updates remain the same)...
     if (summoningState.isSummoning) {
         summonPaymentOverlay.classList.add('visible');
         summonPaymentTitle.textContent = `Summoning ${summoningState.cardToSummon.name}`;
@@ -244,24 +246,48 @@ export function updateUI(gameState, callbacks) {
         opponentHandContainer.appendChild(cardEl);
     });
 
-    playerFieldElement.innerHTML = '';
+    const playerSpiritsContainer = document.getElementById('player-spirits-container');
+    const playerNexusesContainer = document.getElementById('player-nexuses-container');
+    if (playerSpiritsContainer) playerSpiritsContainer.innerHTML = '';
+    if (playerNexusesContainer) playerNexusesContainer.innerHTML = '';
+
     gameState.player.field.forEach(card => {
         const cardEl = createCardElement(card, 'field', gameState, callbacks);
+        // *** FIXED: Added the missing logic to render cores on the card element ***
         const coreContainer = cardEl.querySelector('.card-core-display');
         if (card.cores && coreContainer) {
-            card.cores.forEach(core => coreContainer.appendChild(createCoreElement(core, { type: 'field', spiritUid: card.uid }, gameState, callbacks)));
+            card.cores.forEach(core => {
+                coreContainer.appendChild(createCoreElement(core, { type: 'field', spiritUid: card.uid }, gameState, callbacks));
+            });
         }
-        playerFieldElement.appendChild(cardEl);
+        // *** END OF FIX ***
+        if (card.type === 'Spirit' && playerSpiritsContainer) {
+            playerSpiritsContainer.appendChild(cardEl);
+        } else if (card.type === 'Nexus' && playerNexusesContainer) {
+            playerNexusesContainer.appendChild(cardEl);
+        }
     });
-    opponentFieldElement.innerHTML = '';
+
+    const opponentSpiritsContainer = document.getElementById('opponent-spirits-container');
+    const opponentNexusesContainer = document.getElementById('opponent-nexuses-container');
+    if (opponentSpiritsContainer) opponentSpiritsContainer.innerHTML = '';
+    if (opponentNexusesContainer) opponentNexusesContainer.innerHTML = '';
+
     gameState.opponent.field.forEach(card => {
         const cardEl = createCardElement(card, 'field', gameState, callbacks);
-        cardEl.classList.remove('can-attack', 'can-block');
+        // *** FIXED: Added the missing logic to render cores on the card element ***
         const coreContainer = cardEl.querySelector('.card-core-display');
         if (card.cores && coreContainer) {
-            card.cores.forEach(core => coreContainer.appendChild(createCoreElement(core, { type: 'field', spiritUid: card.uid }, gameState, callbacks)));
+            card.cores.forEach(core => {
+                coreContainer.appendChild(createCoreElement(core, { type: 'field', spiritUid: card.uid }, gameState, callbacks));
+            });
         }
-        opponentFieldElement.appendChild(cardEl);
+        // *** END OF FIX ***
+        if (card.type === 'Spirit' && opponentSpiritsContainer) {
+            opponentSpiritsContainer.appendChild(cardEl);
+        } else if (card.type === 'Nexus' && opponentNexusesContainer) {
+            opponentNexusesContainer.appendChild(cardEl);
+        }
     });
 
     playerReserveCoreContainer.innerHTML = '';
@@ -281,7 +307,6 @@ export function updateUI(gameState, callbacks) {
     gameState.opponent.costTrash.forEach(core => opponentCostCoreContainer.appendChild(createCoreElement(core, { type: 'trash' }, gameState, callbacks)));
     opponentCostTrashZone.appendChild(opponentCostCoreContainer);
     
-    // Update Card Trash to show the latest card image
     playerCardTrashZone.querySelector('span').textContent = `Card Trash (${gameState.player.cardTrash.length})`;
     const latestPlayerCard = gameState.player.cardTrash.length > 0 ? gameState.player.cardTrash[gameState.player.cardTrash.length - 1] : null;
     const playerLatestCardImage = playerCardTrashZone.querySelector('.latest-card-image');
@@ -325,9 +350,8 @@ export function updateUI(gameState, callbacks) {
     turnIndicator.style.color = gameState.turn === 'player' ? '#00d2ff' : '#ff4141';
     phaseBtn.disabled = gameState.turn !== 'player' || summoningState.isSummoning || placementState.isPlacing || (attackState.isAttacking && attackState.defender === 'player') || flashState.isActive || flashPaymentState.isPaying;
     
-    attachDragAndDropListeners(gameState);
+    attachDragAndDropListeners(gameState, callbacks);
 
-    // Populate the card trash viewers (they are hidden by default)
     cardTrashViewerContainer.innerHTML = '';
     gameState.player.cardTrash.forEach(card => {
         const cardEl = document.createElement('div');
@@ -336,7 +360,6 @@ export function updateUI(gameState, callbacks) {
         cardTrashViewerContainer.appendChild(cardEl);
     });
 
-    // NEW: Populate opponent's card trash viewer
     opponentCardTrashViewerContainer.innerHTML = '';
     gameState.opponent.cardTrash.forEach(card => {
         const cardEl = document.createElement('div');

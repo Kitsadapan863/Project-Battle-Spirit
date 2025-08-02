@@ -6,7 +6,6 @@ import { updateUI, playerReserveCoreContainer } from './ui.js';
 function handleDrop(e, gameState) {
     e.preventDefault();
     e.currentTarget.classList.remove('drag-over-core');
-    // *** CHANGE: Added phase check. Core movement is only allowed in the main step. ***
     if (gameState.turn !== 'player' || gameState.phase !== 'main' || gameState.summoningState.isSummoning || gameState.placementState.isPlacing) return;
 
     const type = e.dataTransfer.getData('type');
@@ -18,15 +17,17 @@ function handleDrop(e, gameState) {
     const targetElement = e.currentTarget;
     const targetCardUid = targetElement.classList.contains('card') ? targetElement.id : null;
 
+    // FIXED: Pass the correct callbacks object to updateUI
     if (moveCore(coreId, from, sourceCardUid, targetElement.id, targetCardUid, gameState)) {
-        updateUI(gameState);
+        updateUI(gameState, window.appCallbacks); // Assuming callbacks are globally accessible for now
     }
 }
 
-export function attachDragAndDropListeners(gameState) {
-    // *** CHANGE: Do not attach any drag/drop listeners if it's not the Main Step. ***
+export function attachDragAndDropListeners(gameState, callbacks) { // Pass callbacks in
+    // Store callbacks for use in handleDrop
+    window.appCallbacks = callbacks;
+
     if (gameState.turn !== 'player' || gameState.phase !== 'main' || gameState.summoningState.isSummoning || gameState.placementState.isPlacing) {
-        // This ensures that cores are not draggable outside of the main step.
         return;
     }
 
@@ -52,6 +53,7 @@ export function attachDragAndDropListeners(gameState) {
         core.addEventListener('dragend', e => e.currentTarget.classList.remove('dragging'));
     });
 
+    // The selector '#player-field .card' correctly targets both Spirits and Nexuses
     const dropZones = [playerReserveCoreContainer.parentElement, ...document.querySelectorAll('#player-field .card')];
     dropZones.forEach(zone => {
         if (zone.dataset.dropListenerAttached === 'true') return;

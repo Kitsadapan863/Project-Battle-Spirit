@@ -202,5 +202,21 @@ export const allCards = [
         hasFlash: true,
         effects: ['[Main]: Draw 2 cards from your deck.', '[Flash]: During this battle, 1 of your Spirits gets +2000 BP.'],
     },
+    // *** NEW: Nexus Card ***
+    {
+        id: 'nexus-burning-canyon',
+        name: 'The Burning Canyon',
+        image: '../images/The Burning Canyon.webp', 
+        cost: 3,
+        symbol_cost:{"red":2},
+        level:{ "level-1":{ "core": 0 }, "level-2":{ "core": 1 } },
+        type: 'Nexus', 
+        color: 'red',
+        effects: [
+            '[LV1][LV2] (Your Draw Step) Draw 1 card. Then, discard 1 card.',
+            '[LV2] (During Your Battle Phase) Spirits you control get +1000BP.'
+        ],
+        symbol: {"red":1},
+    },
 
 ];
