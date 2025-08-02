@@ -1,9 +1,9 @@
 // js/main.js
 import { allCards } from './cards.js';
-// FIXED: Imported the missing cancelCoreRemovalBtn variable
 import { updateUI, phaseBtn, restartBtn, cancelSummonBtn, confirmSummonBtn, confirmPlacementBtn, gameOverModal, takeDamageBtn, playerHandContainer, playerFieldElement, playerReserveCoreContainer, passFlashBtn, confirmMagicBtn, cancelMagicBtn, cardTrashModal, closeTrashViewerBtn, playerCardTrashZone, opponentCardTrashZone, opponentCardTrashModal, closeOpponentTrashViewerBtn, confirmDiscardBtn, confirmCoreRemovalBtn, cancelCoreRemovalBtn } from './ui.js';
 import { getSpiritLevelAndBP, getCardLevel } from './utils.js';
 import { summonSpiritAI, drawCard, calculateCost, checkGameOver, cancelSummon, confirmSummon, confirmPlacement, performRefreshStep, takeLifeDamage, declareBlock, initiateSummon, selectCoreForPlacement, selectCoreForPayment, handleSpiritClick, enterFlashTiming, passFlash, initiateMagicPayment, confirmMagicPayment, cancelMagicPayment, initiateDiscard, selectCardForDiscard, confirmDiscard, confirmCoreRemoval, cancelCoreRemoval } from './actions.js';
+import {resolveTriggeredEffects} from './effects.js'
 
 let gameState;
 
@@ -73,11 +73,13 @@ function startPlayerTurn() {
         
         let extraDraws = 0;
         gameState.player.field.forEach(card => {
-            if (card.id === 'nexus-burning-canyon') {
-                const nexusLevel = getCardLevel(card).level;
-                if (nexusLevel >= 1) {
-                    extraDraws++;
-                }
+            if (card.effects) {
+                card.effects.forEach(effect => {
+                    const cardLevel = getCardLevel(card).level;
+                    if (effect.timing === 'onDrawStep' && effect.level.includes(cardLevel)) {
+                        extraDraws++;
+                    }
+                });
             }
         });
 
@@ -153,6 +155,7 @@ function runAiTurn() {
     }, 2000);
 }
 
+// *** FIXED: AI now triggers 'whenAttacks' effects like Crush ***
 function aiAttackStep(isNewAttackDeclaration) {
     if (gameState.gameover) return;
     gameState.phase = 'attack';
@@ -164,6 +167,10 @@ function aiAttackStep(isNewAttackDeclaration) {
             const attacker = attackers[0];
             
             attacker.isExhausted = true;
+            
+            // Resolve any "whenAttacks" effects for the AI
+            resolveTriggeredEffects(attacker, 'whenAttacks', 'opponent', gameState);
+
             gameState.attackState = { isAttacking: true, attackerUid: attacker.uid, defender: 'player' };
             enterFlashTiming(gameState, 'beforeBlock');
             updateUI(gameState, callbacks);

@@ -53,7 +53,7 @@ export const allCards = [
         type: 'Spirit', color: 'blue',
         family: ["Artificial Soldier"], 
         effects: [
-            { level: [1, 2, 3], timing: 'ongoing', description: 'This Spirit gains +1000 BP for each Core on it.' }
+            { level: [1, 2, 3], timing: 'whenAttacks',keyword: 'crush', description: "[Crush] Move cards from the top of your opponent's Deck to their trash equal to this spirit's LV." }
         ],
         symbol: {"blue":1},
     },

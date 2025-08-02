@@ -1,5 +1,6 @@
 // js/actions.js
 import { getSpiritLevelAndBP, getCardLevel } from './utils.js';
+import { resolveTriggeredEffects } from './effects.js';
 
 function destroyCard(cardUid, ownerKey, gameState) {
     const owner = gameState[ownerKey];
@@ -32,6 +33,7 @@ function cleanupField(gameState) {
         }
     }
 }
+
 
 export function performRefreshStep(playerType, gameState) {
     const player = gameState[playerType];
@@ -113,6 +115,7 @@ export function summonSpiritAI(playerType, cardUid, gameState) {
     return false;
 }
 
+// *** FIXED: Now calls resolveTriggeredEffects on attack declaration ***
 export function handleSpiritClick(cardData, gameState) {
     if (cardData.type !== 'Spirit') return false;
 
@@ -120,6 +123,10 @@ export function handleSpiritClick(cardData, gameState) {
         const attacker = gameState.player.field.find(s => s.uid === cardData.uid);
         if (attacker) {
             attacker.isExhausted = true;
+            
+            // Resolve any "whenAttacks" effects like Crush
+            resolveTriggeredEffects(attacker, 'whenAttacks', 'player', gameState);
+
             gameState.attackState = { isAttacking: true, attackerUid: cardData.uid, defender: 'opponent', blockerUid: null };
             enterFlashTiming(gameState, 'beforeBlock');
             return 'attack';
@@ -135,15 +142,13 @@ export function handleSpiritClick(cardData, gameState) {
     return false;
 }
 
-// *** FIXED: Added deck out loss condition ***
 export function drawCard(playerType, gameState) {
     const player = gameState[playerType];
     if (player.deck.length > 0) {
         player.hand.push(player.deck.shift());
     } else {
-        // Deck out: The player who cannot draw loses.
         console.log(`${playerType} has no cards left to draw and loses!`);
-        player.life = 0; // Set life to 0 to trigger the existing game over logic.
+        player.life = 0;
         checkGameOver(gameState);
     }
 }
