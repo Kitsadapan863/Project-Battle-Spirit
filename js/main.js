@@ -1,6 +1,7 @@
 // js/main.js
 import { allCards } from './cards.js';
-import { updateUI, phaseBtn, restartBtn, cancelSummonBtn, confirmSummonBtn, confirmPlacementBtn, gameOverModal, takeDamageBtn, playerHandContainer, playerFieldElement, playerReserveCoreContainer, passFlashBtn, confirmFlashBtn, cancelFlashBtn } from './ui.js';
+// FIXED: Import new UI elements
+import { updateUI, phaseBtn, restartBtn, cancelSummonBtn, confirmSummonBtn, confirmPlacementBtn, gameOverModal, takeDamageBtn, playerHandContainer, playerFieldElement, playerReserveCoreContainer, passFlashBtn, confirmFlashBtn, cancelFlashBtn, cardTrashModal, closeTrashViewerBtn, playerCardTrashZone, opponentCardTrashZone, opponentCardTrashModal, closeOpponentTrashViewerBtn } from './ui.js';
 import { getSpiritLevelAndBP } from './utils.js';
 import { summonSpiritAI, drawCard, calculateCost, checkGameOver, cancelSummon, confirmSummon, confirmPlacement, performRefreshStep, takeLifeDamage, declareBlock, initiateSummon, selectCoreForPlacement, selectCoreForPayment, handleSpiritClick, enterFlashTiming, passFlash, initiateFlashPayment, confirmFlashPayment, cancelFlashPayment } from './actions.js';
 
@@ -203,6 +204,25 @@ takeDamageBtn.addEventListener('click', () => {
     takeLifeDamage(gameState);
     updateUI(gameState, callbacks);
     setTimeout(() => aiAttackStep(true), 500);
+});
+
+// NEW: Card Trash Viewer Listeners
+playerCardTrashZone.addEventListener('click', () => {
+    cardTrashModal.classList.add('visible');
+});
+
+// NEW: Opponent's trash is now viewable
+opponentCardTrashZone.addEventListener('click', () => { 
+    opponentCardTrashModal.classList.add('visible');
+});
+
+// NEW: Close button for opponent's trash viewer
+closeOpponentTrashViewerBtn.addEventListener('click', () => {
+    opponentCardTrashModal.classList.remove('visible');
+});
+
+closeTrashViewerBtn.addEventListener('click', () => {
+    cardTrashModal.classList.remove('visible');
 });
 
 // *** FIXED: Simplified passFlashBtn logic for new action flow ***

@@ -22,6 +22,18 @@ export const phaseBtn = document.getElementById('phase-btn');
 export const gameOverModal = document.getElementById('game-over-modal');
 export const gameOverMessage = document.getElementById('game-over-message');
 export const restartBtn = document.getElementById('restart-btn');
+// NEW: Card Trash Viewer Modal Elements
+export const cardTrashModal = document.getElementById('card-trash-modal');
+export const cardTrashViewerTitle = document.getElementById('card-trash-viewer-title');
+export const cardTrashViewerContainer = document.getElementById('card-trash-viewer-container');
+export const closeTrashViewerBtn = document.getElementById('close-trash-viewer-btn');
+// NEW: Opponent Card Trash Viewer Modal Elements
+export const opponentCardTrashModal = document.getElementById('opponent-card-trash-modal');
+export const opponentCardTrashViewerTitle = document.getElementById('opponent-card-trash-viewer-title');
+export const opponentCardTrashViewerContainer = document.getElementById('opponent-card-trash-viewer-container');
+export const closeOpponentTrashViewerBtn = document.getElementById('close-opponent-trash-viewer-btn');
+
+
 // Summon Modal
 export const summonPaymentOverlay = document.getElementById('summon-payment-overlay');
 export const summonPaymentTitle = document.getElementById('summon-payment-title');
@@ -257,7 +269,6 @@ export function updateUI(gameState, callbacks) {
     opponentReserveCoreContainer.innerHTML = '';
     gameState.opponent.reserve.forEach(core => opponentReserveCoreContainer.appendChild(createCoreElement(core, { type: 'reserve' }, gameState, callbacks)));
     
-    // *** FIXED: Update text content for all zones with counts ***
     playerCostTrashZone.innerHTML = `<span>Cost Trash (${gameState.player.costTrash.length})</span>`;
     const playerCostCoreContainer = document.createElement('div');
     playerCostCoreContainer.className = 'core-container';
@@ -270,8 +281,28 @@ export function updateUI(gameState, callbacks) {
     gameState.opponent.costTrash.forEach(core => opponentCostCoreContainer.appendChild(createCoreElement(core, { type: 'trash' }, gameState, callbacks)));
     opponentCostTrashZone.appendChild(opponentCostCoreContainer);
     
-    playerCardTrashZone.innerHTML = `<span>Card Trash (${gameState.player.cardTrash.length})</span>`;
-    opponentCardTrashZone.innerHTML = `<span>Card Trash (${gameState.opponent.cardTrash.length})</span>`;
+    // Update Card Trash to show the latest card image
+    playerCardTrashZone.querySelector('span').textContent = `Card Trash (${gameState.player.cardTrash.length})`;
+    const latestPlayerCard = gameState.player.cardTrash.length > 0 ? gameState.player.cardTrash[gameState.player.cardTrash.length - 1] : null;
+    const playerLatestCardImage = playerCardTrashZone.querySelector('.latest-card-image');
+    if (playerLatestCardImage) {
+        if (latestPlayerCard) {
+            playerLatestCardImage.style.backgroundImage = `url('${latestPlayerCard.image}')`;
+        } else {
+            playerLatestCardImage.style.backgroundImage = 'none';
+        }
+    }
+
+    opponentCardTrashZone.querySelector('span').textContent = `Card Trash (${gameState.opponent.cardTrash.length})`;
+    const latestOpponentCard = gameState.opponent.cardTrash.length > 0 ? gameState.opponent.cardTrash[gameState.opponent.cardTrash.length - 1] : null;
+    const opponentLatestCardImage = opponentCardTrashZone.querySelector('.latest-card-image');
+    if (opponentLatestCardImage) {
+        if (latestOpponentCard) {
+            opponentLatestCardImage.style.backgroundImage = `url('${latestOpponentCard.image}')`;
+        } else {
+            opponentLatestCardImage.style.backgroundImage = 'none';
+        }
+    }
     
     const playerReserveZone = document.getElementById('player-reserve-zone');
     if (playerReserveZone) {
@@ -295,4 +326,22 @@ export function updateUI(gameState, callbacks) {
     phaseBtn.disabled = gameState.turn !== 'player' || summoningState.isSummoning || placementState.isPlacing || (attackState.isAttacking && attackState.defender === 'player') || flashState.isActive || flashPaymentState.isPaying;
     
     attachDragAndDropListeners(gameState);
+
+    // Populate the card trash viewers (they are hidden by default)
+    cardTrashViewerContainer.innerHTML = '';
+    gameState.player.cardTrash.forEach(card => {
+        const cardEl = document.createElement('div');
+        cardEl.className = 'card';
+        cardEl.innerHTML = `<img src="${card.image}" alt="${card.name}" draggable="false"/>`;
+        cardTrashViewerContainer.appendChild(cardEl);
+    });
+
+    // NEW: Populate opponent's card trash viewer
+    opponentCardTrashViewerContainer.innerHTML = '';
+    gameState.opponent.cardTrash.forEach(card => {
+        const cardEl = document.createElement('div');
+        cardEl.className = 'card';
+        cardEl.innerHTML = `<img src="${card.image}" alt="${card.name}" draggable="false"/>`;
+        opponentCardTrashViewerContainer.appendChild(cardEl);
+    });
 }

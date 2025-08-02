@@ -25,11 +25,12 @@
       <div class="zone field" id="opponent-field"></div>
       <div class="side-zone opponent-right-zones">
         <div class="zone deck" id="opponent-deck"></div>
+        <div class="zone trash card-trash" id="opponent-card-trash-zone">
+          <div class="latest-card-image"></div>
+          <span>Card Trash</span>
+        </div>
         <div class="zone trash cost-trash" id="opponent-cost-trash-zone">
           <span>Cost Trash</span>
-        </div>
-        <div class="zone trash card-trash" id="opponent-card-trash-zone">
-          <span>Card Trash</span>
         </div>
       </div>
     </div>
@@ -66,11 +67,12 @@
       <div class="zone field" id="player-field"></div>
       <div class="side-zone player-right-zones">
         <div class="zone deck" id="player-deck"></div>
+        <div class="zone trash card-trash" id="player-card-trash-zone">
+          <div class="latest-card-image"></div>
+          <span>Card Trash</span>
+        </div>
          <div class="zone trash cost-trash" id="player-cost-trash-zone">
           <span>Cost Trash</span>
-        </div>
-        <div class="zone trash card-trash" id="player-card-trash-zone">
-          <span>Card Trash</span>
         </div>
       </div>
     </div>
@@ -141,6 +143,21 @@
         <div class="flash-buttons">
             <button id="pass-flash-btn">Pass</button>
         </div>
+    </div>
+  </div>
+
+  <div id="card-trash-modal" class="modal-overlay">
+    <div class="modal-content trash-viewer-modal">
+        <h3 id="card-trash-viewer-title">Your Card Trash</h3>
+        <div id="card-trash-viewer-container" class="card-container"></div>
+        <button id="close-trash-viewer-btn">Close</button>
+    </div>
+  </div>
+  <div id="opponent-card-trash-modal" class="modal-overlay">
+    <div class="modal-content trash-viewer-modal">
+        <h3 id="opponent-card-trash-viewer-title">Opponent's Card Trash</h3>
+        <div id="opponent-card-trash-viewer-container" class="card-container"></div>
+        <button id="close-opponent-trash-viewer-btn">Close</button>
     </div>
   </div>
 
