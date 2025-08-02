@@ -124,10 +124,11 @@ export function handleSpiritClick(cardData, gameState) {
         if (attacker) {
             attacker.isExhausted = true;
             
-            // Resolve any "whenAttacks" effects like Crush
+            gameState.attackState = { isAttacking: true, attackerUid: cardData.uid, defender: 'opponent', blockerUid: null, isClash: false };
+
+            // Resolve any "whenAttacks" effects like Crush or Clash
             resolveTriggeredEffects(attacker, 'whenAttacks', 'player', gameState);
 
-            gameState.attackState = { isAttacking: true, attackerUid: cardData.uid, defender: 'opponent', blockerUid: null };
             enterFlashTiming(gameState, 'beforeBlock');
             return 'attack';
         }
@@ -404,13 +405,16 @@ export function resolveFlashWindow(gameState) {
     gameState.flashState.isActive = false;
     
     if (gameState.flashState.timing === 'beforeBlock') {
-        if (gameState.attackState.defender === 'opponent') {
+        if (gameState.attackState.defender === 'opponent') { // AI is defending
             const attacker = gameState.player.field.find(s => s.uid === gameState.attackState.attackerUid);
-            const potentialBlockers = gameState.opponent.field.filter(s => !s.isExhausted);
+            const potentialBlockers = gameState.opponent.field.filter(s => !s.isExhausted && s.type === 'Spirit');
             potentialBlockers.sort((a,b) => getSpiritLevelAndBP(b, 'opponent', gameState).bp - getSpiritLevelAndBP(a, 'opponent', gameState).bp);
             const bestBlocker = potentialBlockers.length > 0 ? potentialBlockers[0] : null;
 
-            if (bestBlocker && getSpiritLevelAndBP(bestBlocker, 'opponent', gameState).bp >= getSpiritLevelAndBP(attacker, 'player', gameState).bp) {
+            if (gameState.attackState.isClash && bestBlocker) {
+                 console.log("Clash is active! Opponent is forced to block.");
+                 declareBlock(bestBlocker.uid, gameState);
+            } else if (bestBlocker && getSpiritLevelAndBP(bestBlocker, 'opponent', gameState).bp >= getSpiritLevelAndBP(attacker, 'player', gameState).bp) {
                 declareBlock(bestBlocker.uid, gameState);
             } else {
                 takeLifeDamage(gameState);

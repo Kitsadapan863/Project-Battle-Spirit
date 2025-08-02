@@ -232,23 +232,35 @@ body {
 }
   
   /* Life Zone and Core Container */
-  .life-circles, .core-container {
+  .life-circles {
       display: flex;
       flex-wrap: wrap;
+      margin-left: 15px;
       gap: 8px;
-      justify-content: center;
+      /* justify-content: center; */
       align-items: center;
       padding: 5px;
       width: 100%;
   }
 
+  .core-container {
+      display: flex;
+      flex-wrap: wrap;
+      /* margin-left: 15px; */
+      /* gap: 10px; */
+      /* justify-content: center; */
+      align-items: center;
+      padding: 1px;
+      width: 100%;
+  }
+
   .life-circles {
-      max-width: 90px;
+      max-width: 150px;
   }
 
   .life-circle {
-      width: 20px;
-      height: 20px;
+      width: 25px;
+      height: 25px;
       background-color: #00c3ff;
       border-radius: 50%;
       border: 2px solid #00567a;

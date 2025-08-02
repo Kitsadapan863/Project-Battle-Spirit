@@ -15,6 +15,13 @@ function applyCrush(card, cardLevel, opponentKey, gameState) {
     }
 }
 
+function applyClash(card, ownerKey, gameState) {
+    console.log(`Activating [Clash] from ${card.name}`);
+    if (gameState.attackState.isAttacking) {
+        gameState.attackState.isClash = true;
+    }
+}
+
 // This is the main function that will be called to resolve effects
 export function resolveTriggeredEffects(card, timing, ownerKey, gameState) {
     if (!card.effects) return;
@@ -28,10 +35,14 @@ export function resolveTriggeredEffects(card, timing, ownerKey, gameState) {
             
             // Handle keywords
             if (effect.keyword) {
+                console.log("keyword:",opponentKey,effect.keyword)
                 switch (effect.keyword) {
                     case 'crush':
                         applyCrush(card, cardLevel, opponentKey, gameState);
                         break;
+                    case 'clash':
+                        applyClash(card, opponentKey, gameState)
+                        break
                     // Future keywords like 'rampage' or 'armor' can be added here
                     // case 'rampage':
                     //     applyRampage(card, ownerKey, gameState);

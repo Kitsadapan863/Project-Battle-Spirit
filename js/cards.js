@@ -25,7 +25,35 @@ export const allCards = [
         type: 'Spirit', color: 'red',
         family: ["Astral Dragon", "Ancient Dragon"], 
         effects: [
-            { level: [1, 2, 3], timing: 'whenAttacks', description: '(Your Attack Step) By paying 1 cost: This Spirit gains +3000 BP.' }
+            { level: [1, 2, 3], timing: 'whenAttacks',keyword:'clash', description: "[LV1][LV2][LV3] [Clash]\n(When Attacks)\nThe opponent must block if possible." }
+        ],
+        symbol: {"red":1},
+    },
+        {
+        id: 'card-siegwurm',
+        name: 'The ThunderEmperorDragon Siegwurm',
+        image: '../images/The ThunderEmperorDragon Siegwurm.webp',
+        cost: 6,
+        symbol_cost:{"red":3},
+        level:{ "level-1":{ "core": 1, "bp": 4000 }, "level-2":{ "core": 3, "bp": 6000 }, "level-3":{ "core": 5, "bp": 9000 } },
+        type: 'Spirit', color: 'red',
+        family: ["Astral Dragon", "Ancient Dragon"], 
+        effects: [
+            { level: [1, 2, 3], timing: 'whenAttacks',keyword:'clash', description: "[LV1][LV2][LV3] [Clash]\n(When Attacks)\nThe opponent must block if possible." }
+        ],
+        symbol: {"red":1},
+    },
+        {
+        id: 'card-siegwurm',
+        name: 'The ThunderEmperorDragon Siegwurm',
+        image: '../images/The ThunderEmperorDragon Siegwurm.webp',
+        cost: 6,
+        symbol_cost:{"red":3},
+        level:{ "level-1":{ "core": 1, "bp": 4000 }, "level-2":{ "core": 3, "bp": 6000 }, "level-3":{ "core": 5, "bp": 9000 } },
+        type: 'Spirit', color: 'red',
+        family: ["Astral Dragon", "Ancient Dragon"], 
+        effects: [
+            { level: [1, 2, 3], timing: 'whenAttacks',keyword:'clash', description: "[LV1][LV2][LV3] [Clash]\n(When Attacks)\nThe opponent must block if possible." }
         ],
         symbol: {"red":1},
     },
@@ -53,7 +81,7 @@ export const allCards = [
         type: 'Spirit', color: 'blue',
         family: ["Artificial Soldier"], 
         effects: [
-            { level: [1, 2, 3], timing: 'whenAttacks',keyword: 'crush', description: "[Crush] Move cards from the top of your opponent's Deck to their trash equal to this spirit's LV." }
+            { level: [1, 2, 3], timing: 'whenAttacks',keyword: 'crush', description: "[LV1][LV2][LV3] [Crush]\n(When Attacks)\nMove cards from the top of your opponent's Deck to their trash equal to this spirit's LV." }
         ],
         symbol: {"blue":1},
     },

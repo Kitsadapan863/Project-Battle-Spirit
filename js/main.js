@@ -155,23 +155,26 @@ function runAiTurn() {
     }, 2000);
 }
 
-// *** FIXED: AI now triggers 'whenAttacks' effects like Crush ***
+// *** FIXED: Corrected the order of operations for Clash effect ***
 function aiAttackStep(isNewAttackDeclaration) {
     if (gameState.gameover) return;
     gameState.phase = 'attack';
     
     if (isNewAttackDeclaration) {
-        const attackers = gameState.opponent.field.filter(s => !s.isExhausted);
+        const attackers = gameState.opponent.field.filter(s => s.type === 'Spirit' && !s.isExhausted);
         if (attackers.length > 0) {
             attackers.sort((a, b) => getSpiritLevelAndBP(b, 'opponent', gameState).bp - getSpiritLevelAndBP(a, 'opponent', gameState).bp);
             const attacker = attackers[0];
             
             attacker.isExhausted = true;
             
-            // Resolve any "whenAttacks" effects for the AI
+            // First, set up the attack state, including resetting clash
+            gameState.attackState = { isAttacking: true, attackerUid: attacker.uid, defender: 'player', blockerUid: null, isClash: false };
+            
+            // Then, resolve effects which might change the attack state (e.g., set isClash to true)
             resolveTriggeredEffects(attacker, 'whenAttacks', 'opponent', gameState);
 
-            gameState.attackState = { isAttacking: true, attackerUid: attacker.uid, defender: 'player' };
+            // Finally, proceed to the next game step
             enterFlashTiming(gameState, 'beforeBlock');
             updateUI(gameState, callbacks);
         } else {

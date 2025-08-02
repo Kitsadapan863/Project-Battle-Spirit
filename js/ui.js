@@ -209,6 +209,15 @@ export function updateUI(gameState, callbacks) {
             const { bp } = getSpiritLevelAndBP(attacker, 'opponent', gameState);
             defenseAttackerInfo.textContent = `Attacker: ${attacker.name} (BP: ${bp})`;
         }
+
+        const playerHasBlockers = gameState.player.field.some(s => s.type === 'Spirit' && !s.isExhausted);
+        if (attackState.isClash && playerHasBlockers) {
+            takeDamageBtn.style.display = 'none';
+            defenseTitle.textContent = "Clash! You Must Block!";
+        } else {
+            takeDamageBtn.style.display = 'block';
+            defenseTitle.textContent = "Opponent is Attacking!";
+        }
     } else {
         defenseOverlay.classList.remove('visible');
     }
