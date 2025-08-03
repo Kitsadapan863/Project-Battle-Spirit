@@ -229,6 +229,97 @@ export const playerCards = [
     ],
     symbol: {"blue":1},
 },
+//Stone-Statue
+{
+    id: 'card-stone-statue',
+    name: 'Stone-Statue',
+    image: '../images/Stone-Statue.webp', 
+    cost: 1,
+    symbol_cost:{"blue":1},
+    level:{ "level-1":{ "core": 1, "bp": 2000 }, "level-2":{ "core": 4, "bp": 4000 }},
+    type: 'Spirit', color: 'blue',
+    family: ["Artificial Soldier"], 
+    effects: [
+    { level: [1, 2], timing: 'whenSummoned', keyword: 'discard', count: 1, description: "[LV1][LV2] (When Summoned)\nMove the top card of your opponent's Deck to their Trash." },
+    ],
+        symbol: {"blue":1},
+    },
+    {
+    id: 'card-stone-statue',
+    name: 'Stone-Statue',
+    image: '../images/Stone-Statue.webp', 
+    cost: 1,
+    symbol_cost:{"blue":1},
+    level:{ "level-1":{ "core": 1, "bp": 2000 }, "level-2":{ "core": 4, "bp": 4000 }},
+    type: 'Spirit', color: 'blue',
+    family: ["Artificial Soldier"], 
+    effects: [
+    { level: [1, 2], timing: 'whenSummoned', keyword: 'discard', count: 1, description: "[LV1][LV2] (When Summoned)\nMove the top card of your opponent's Deck to their Trash." },
+    ],
+        symbol: {"blue":1},
+    },
+    {
+    id: 'card-stone-statue',
+    name: 'Stone-Statue',
+    image: '../images/Stone-Statue.webp', 
+    cost: 1,
+    symbol_cost:{"blue":1},
+    level:{ "level-1":{ "core": 1, "bp": 2000 }, "level-2":{ "core": 4, "bp": 4000 }},
+    type: 'Spirit', color: 'blue',
+    family: ["Artificial Soldier"], 
+    effects: [
+    { level: [1, 2], timing: 'whenSummoned', keyword: 'discard', count: 1, description: "[LV1][LV2] (When Summoned)\nMove the top card of your opponent's Deck to their Trash." },
+    ],
+        symbol: {"blue":1},
+    },
+    //The Two-Sword Ambrose
+     {
+    id: 'card-two-sword-ambrose',
+    name: 'The Two-Sword Ambrose',
+    image: '../images/The Two-Sword Ambrose.webp', 
+    cost: 2,
+    symbol_cost:{"blue":1},
+    level:{ "level-1":{ "core": 1, "bp": 2000 }, "level-2":{ "core": 3, "bp": 3000 }, "level-3":{ "core": 4, "bp": 5000 }},
+    type: 'Spirit', color: 'blue',
+    family: ["Fighting Spirit"], 
+    effects: [
+    { level: [1, 2, 3], timing: 'whenAttacks',keyword: 'crush', description: "[LV1][LV2][LV3] [Crush]\n(When Attacks)\nMove cards from the top of your opponent's Deck to their trash equal to this spirit's LV." },
+    { level: [2, 3], timing: 'whenAttacks',keyword: 'power up', power:1000, triggered_by: 'crush', duration: 'turn', description: "[LV2][LV3]\n(When Attacks)\nFor each Spirit card discarded by this Spirit's Crush effect, this Spirit gains +1000 BP." }
+        
+    ],
+        symbol: {"blue":1},
+    },
+     {
+    id: 'card-two-sword-ambrose',
+    name: 'The Two-Sword Ambrose',
+    image: '../images/The Two-Sword Ambrose.webp', 
+    cost: 2,
+    symbol_cost:{"blue":1},
+    level:{ "level-1":{ "core": 1, "bp": 2000 }, "level-2":{ "core": 3, "bp": 3000 }, "level-3":{ "core": 4, "bp": 5000 }},
+    type: 'Spirit', color: 'blue',
+    family: ["Fighting Spirit"], 
+    effects: [
+    { level: [1, 2, 3], timing: 'whenAttacks',keyword: 'crush', description: "[LV1][LV2][LV3] [Crush]\n(When Attacks)\nMove cards from the top of your opponent's Deck to their trash equal to this spirit's LV." },
+    { level: [2, 3], timing: 'whenAttacks',keyword: 'power up', power:1000, triggered_by: 'crush', duration: 'turn', description: "[LV2][LV3]\n(When Attacks)\nFor each Spirit card discarded by this Spirit's Crush effect, this Spirit gains +1000 BP." }
+        
+    ],
+        symbol: {"blue":1},
+    },
+     {
+    id: 'card-two-sword-ambrose',
+    name: 'The Two-Sword Ambrose',
+    image: '../images/The Two-Sword Ambrose.webp', 
+    cost: 2,
+    symbol_cost:{"blue":1},
+    level:{ "level-1":{ "core": 1, "bp": 2000 }, "level-2":{ "core": 3, "bp": 3000 }, "level-3":{ "core": 4, "bp": 5000 }},
+    type: 'Spirit', color: 'blue',
+    family: ["Fighting Spirit"], 
+    effects: [
+    { level: [1, 2, 3], timing: 'whenAttacks',keyword: 'crush', description: "[LV1][LV2][LV3] [Crush]\n(When Attacks)\nMove cards from the top of your opponent's Deck to their trash equal to this spirit's LV." },
+    { level: [2, 3], timing: 'whenAttacks',keyword: 'power up', power:1000, triggered_by: 'crush', duration: 'turn', description: "[LV2][LV3]\n(When Attacks)\nFor each Spirit card discarded by this Spirit's Crush effect, this Spirit gains +1000 BP." }
+    ],
+        symbol: {"blue":1},
+    },
     //The Burning Canyon
     {
         id: 'nexus-burning-canyon',
