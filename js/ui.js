@@ -106,9 +106,9 @@ function createCardElement(cardData, location, owner, gameState, callbacks) {
                 </div>
                 <div class="card-core-display"></div>
             `;
-        } else { 
+        } else { // Spirit logic
             const { level, bp, isBuffed } = getSpiritLevelAndBP(cardData, owner, gameState);
-            const bpClass = isBuffed ? 'bp-buffed' : ''; // Check for buff and set class
+            const bpClass = isBuffed ? 'bp-buffed' : '';
             cardDiv.innerHTML += `
                 <div class="card-info">
                     <p class="${bpClass}">Lv${level} BP: ${bp}</p>
@@ -130,9 +130,17 @@ function createCardElement(cardData, location, owner, gameState, callbacks) {
              cardDiv.classList.add('can-block');
         }
 
-        // NEW: Add targeting highlight
-        if (gameState.targetingState.isTargeting && cardData.type === 'Spirit') {
-            cardDiv.classList.add('can-be-targeted');
+        // MODIFIED: Add targeting highlight based on scope
+        if (gameState.targetingState.isTargeting && cardData.type === 'Spirit' && gameState.targetingState.forEffect.target) {
+            const { scope } = gameState.targetingState.forEffect.target;
+            const isPlayerCard = (owner === 'player');
+            const isOpponentCard = (owner === 'opponent');
+
+            if ((scope === 'player' && isPlayerCard) ||
+                (scope === 'opponent' && isOpponentCard) ||
+                (scope === 'any' && (isPlayerCard || isOpponentCard))) {
+                cardDiv.classList.add('can-be-targeted');
+            }
         }
     }
     return cardDiv;

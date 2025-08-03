@@ -134,7 +134,7 @@ export function summonSpiritAI(playerType, cardUid, gameState) {
     return false;
 }
 
-// MODIFIED: Function now accepts duration
+// MODIFIED: Function now searches both player and opponent fields for the target
 export function applyPowerUpEffect(cardUid, power, duration, gameState) {
     const targetSpirit = gameState.player.field.find(s => s.uid === cardUid) || gameState.opponent.field.find(s => s.uid === cardUid);
     if (targetSpirit) {
@@ -169,12 +169,22 @@ export function handleSpiritClick(cardData, gameState) {
     // MODIFIED: When a target is clicked, update targetingState and return true
     if (gameState.targetingState.isTargeting) {
         if (cardData.type === 'Spirit') {
-            gameState.targetingState.onTarget(cardData.uid);
-            // Reset targeting state
-            gameState.targetingState = { isTargeting: false, forEffect: null, onTarget: null };
-            return true; // Return true to signal a state change that needs a UI update
+            const { scope } = gameState.targetingState.forEffect.target;
+            const isPlayerCard = gameState.player.field.some(c => c.uid === cardData.uid);
+            const isOpponentCard = gameState.opponent.field.some(c => c.uid === cardData.uid);
+
+            let isValidTarget = false;
+            if (scope === 'player' && isPlayerCard) isValidTarget = true;
+            if (scope === 'opponent' && isOpponentCard) isValidTarget = true;
+            if (scope === 'any' && (isPlayerCard || isOpponentCard)) isValidTarget = true;
+
+            if (isValidTarget) {
+                gameState.targetingState.onTarget(cardData.uid);
+                gameState.targetingState = { isTargeting: false, forEffect: null, onTarget: null };
+                return true;
+            }
         }
-        return false;
+        return false; // Clicked on an invalid target
     }
     
     if (cardData.type !== 'Spirit') return false;
@@ -559,9 +569,16 @@ export function confirmMagicPayment(gameState) {
     if (effect) {
         switch (effect.keyword) {
             case 'power up':
-                const playerHasSpirits = gameState.player.field.some(card => card.type === 'Spirit');
+                const targetInfo = effect.target;
+                let validTargets = [];
+                if (targetInfo.scope === 'player' || targetInfo.scope === 'any') {
+                    validTargets.push(...gameState.player.field.filter(c => c.type === 'Spirit'));
+                }
+                if (targetInfo.scope === 'opponent' || targetInfo.scope === 'any') {
+                    validTargets.push(...gameState.opponent.field.filter(c => c.type === 'Spirit'));
+                }
                 // FIXED: Check for targets *after* payment
-                if (playerHasSpirits) {
+                if (validTargets.length > 0) {
                     gameState.targetingState = {
                         isTargeting: true,
                         forEffect: effect,
@@ -575,8 +592,7 @@ export function confirmMagicPayment(gameState) {
                         }
                     };
                 } else {
-                    // No targets, so effect fizzles. Just move card to trash.
-                    console.log("Power up effect fizzles: no spirit targets.");
+                    console.log("Power up effect fizzles: no valid spirit targets on the board.");
                     const cardIndex = gameState.player.hand.findIndex(c => c.uid === cardToUse.uid);
                     if (cardIndex > -1) {
                         const [usedCard] = gameState.player.hand.splice(cardIndex, 1);

@@ -67,7 +67,7 @@ export const allCards = [
         type: 'Spirit', color: 'red',
         family: ["Dragon"], 
         effects: [
-            { level: [1, 2], timing: 'whenAttacks',keyword:'power up',power:2000,duration: 'battle', description: "[LV1][LV2]\n(When Attacks)\nThis spirit gets + 2000BP until end of turn." }
+            { level: [1, 2], timing: 'whenAttacks',keyword:'power up',power:2000,duration: 'turn', description: "[LV1][LV2]\n(When Attacks)\nThis spirit gets + 2000BP until end of turn." }
         ],
         symbol: {"red":1},
     },
@@ -148,9 +148,12 @@ export const allCards = [
         symbol_cost:{"red":3},
         type: 'Magic',
         color: 'red',
-        effects: [
-            { timing: 'main', description: 'Draw 2 cards from your deck.' },
-            { timing: 'flash', description: 'During this battle, 1 of your Spirits gets +2000 BP.' }
+       effects: [
+            { timing: 'main', keyword:'draw', quantity: 2, description: '[Main]\nDraw 2 cards from your deck.' },
+            // Brave Draw ส่วนใหญ่จะเพิ่มพลังให้ฝั่งตัวเอง
+            { timing: 'flash', keyword: 'power up', power: 2000, duration: 'battle', 
+              target: { scope: 'player', count: 1 }, 
+              description: '[Flash]\nDuring this battle, 1 of your Spirits gets +2000 BP.' }
         ],
     },
     {
@@ -163,7 +166,9 @@ export const allCards = [
         color: 'red',
         effects: [
             { timing: 'main', keyword:'draw', quantity:2, description: '[Main]\nDraw 2 cards from your deck.' },
-            { timing: 'flash', keyword:'power up',power: 2000,duration: 'turn', description: '[Flash]\nDuring this turn, 1 Spirits gets +2000 BP.' }
+            { timing: 'flash', keyword:'power up',power: 2000,duration: 'turn', 
+              target: { scope: 'any', count: 1 },
+               description: '[Flash]\nDuring this turn, 1 Spirits gets +2000 BP.' }
         ],
     },
     {

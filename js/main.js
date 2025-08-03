@@ -244,6 +244,7 @@ function endAiTurn() {
     if (gameState.gameover) return;
     gameState.phase = 'end';
     clearTemporaryBuffs('opponent', gameState);
+    clearTemporaryBuffs('player', gameState);
     updateUI(gameState, callbacks);
     setTimeout(() => {
         gameState.turn = 'player';
@@ -255,6 +256,7 @@ function endAiTurn() {
 function endTurn() {
     gameState.phase = 'end';
     clearTemporaryBuffs('player', gameState);
+    clearTemporaryBuffs('opponent', gameState);
     updateUI(gameState, callbacks);
     setTimeout(() => {
         gameState.turn = 'opponent';
