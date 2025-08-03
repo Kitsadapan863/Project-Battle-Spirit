@@ -1,32 +1,56 @@
 // js/effects.js
-import { getCardLevel } from './utils.js';
-// *** START: แก้ไขการ import ***
+import { getCardLevel, getSpiritLevelAndBP } from './utils.js';
 import { applyPowerUpEffect, discardOpponentDeck } from './actions.js';
-// *** END: แก้ไขการ import ***
 
+// *** START: แก้ไขฟังก์ชัน applyCrush ให้ถูกต้องตามกฎ ***
 function applyCrush(card, cardLevel, ownerKey, gameState) {
     const opponentKey = ownerKey === 'player' ? 'opponent' : 'player';
     
+    // 1. เริ่มต้นจำนวนที่จะทิ้งด้วยเลเวลของ Spirit ที่ใช้ Crush
     let cardsToDiscard = cardLevel;
     console.log(`[Crush] Base discard from ${card.name} LV${cardLevel}: ${cardsToDiscard}`);
 
-    if (card.effects) {
-        const addCrushEffects = card.effects.filter(effect => 
-            effect.timing === 'permanent' && 
-            effect.keyword === 'add crush' && 
-            effect.level.includes(cardLevel)
-        );
+    // 2. ตรวจสอบหาโบนัส "add crush" โดยจะทำงานเฉพาะใน Attack Step
+    if (gameState.phase === 'attack') {
+        // --- ส่วนที่แก้ไข ---
+        // ตรวจสอบหาโบนัสจาก "ตัวเองเท่านั้น" (The Collapse of Battle Line)
+        gameState[ownerKey].field.forEach(fieldCard => {
+            // ตรวจสอบเฉพาะ Nexus เท่านั้น เพื่อหาเอฟเฟกต์ที่ส่งผลทั้งสนาม
+            if (fieldCard.type === 'Nexus' && fieldCard.effects) {
+                const fieldCardLevel = getCardLevel(fieldCard).level;
+                const activeAddCrushEffects = fieldCard.effects.filter(effect => 
+                    effect.timing === 'permanent' && 
+                    effect.keyword === 'add crush' && 
+                    effect.level.includes(fieldCardLevel)
+                );
+                if (activeAddCrushEffects.length > 0) {
+                    const totalBonusFromCard = activeAddCrushEffects.reduce((sum, effect) => sum + effect.count, 0);
+                    console.log(`[Crush] Found 'add crush' total bonus from ${fieldCard.name}: +${totalBonusFromCard}`);
+                    cardsToDiscard += totalBonusFromCard;
+                }
+            }
+        });
 
-        if (addCrushEffects.length > 0) {
-            const highestBonus = Math.max(...addCrushEffects.map(e => e.count));
-            console.log(`[Crush] Found 'add crush' bonus from itself (${card.name}): +${highestBonus}`);
-            cardsToDiscard += highestBonus;
+        // ตรวจสอบหาโบนัสจาก "ตัวเอง" (Steam-Golem)
+        if (card.effects) {
+            const selfAddCrushEffects = card.effects.filter(effect => 
+                effect.timing === 'permanent' && 
+                effect.keyword === 'add crush' && 
+                effect.level.includes(cardLevel)
+            );
+            if (selfAddCrushEffects.length > 0) {
+                const totalBonusFromSelf = selfAddCrushEffects.reduce((sum, effect) => sum + effect.count, 0);
+                console.log(`[Crush] Found 'add crush' self-bonus from ${card.name}: +${totalBonusFromSelf}`);
+                cardsToDiscard += totalBonusFromSelf;
+            }
         }
+        // --- สิ้นสุดส่วนที่แก้ไข ---
     }
-
+    
     console.log(`[Crush] Total cards to discard: ${cardsToDiscard}`);
     const discardedCards = discardOpponentDeck(cardsToDiscard, opponentKey, gameState);
 
+    // ตรวจสอบหาเอฟเฟกต์ Power Up ที่เชื่อมโยงกับ Crush (สำหรับ Ambrose)
     if (card.effects) {
         const powerUpEffect = card.effects.find(effect =>
             effect.keyword === 'power up' &&
@@ -44,6 +68,8 @@ function applyCrush(card, cardLevel, ownerKey, gameState) {
         }
     }
 }
+// *** END: แก้ไขฟังก์ชัน applyCrush ***
+
 
 function applyClash(card, ownerKey, gameState) {
     console.log(`Activating [Clash] from ${card.name}`);
@@ -55,7 +81,8 @@ function applyClash(card, ownerKey, gameState) {
 export function resolveTriggeredEffects(card, timing, ownerKey, gameState) {
     if (!card.effects) return;
 
-    const cardLevel = getCardLevel(card).level;
+    const { level: cardLevel } = getSpiritLevelAndBP(card, ownerKey, gameState);
+    
     const opponentKey = ownerKey === 'player' ? 'opponent' : 'player';
 
     card.effects.forEach(effect => {

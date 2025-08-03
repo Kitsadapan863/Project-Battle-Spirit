@@ -304,7 +304,7 @@ function initializeGame() {
         drawCard('player', gameState);
         drawCard('opponent', gameState);
     }
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < 10; i++) {
         gameState.player.reserve.push({ id: `core-plr-init-${i}` });
         gameState.opponent.reserve.push({ id: `core-opp-init-${i}` });
     }

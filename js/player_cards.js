@@ -526,6 +526,52 @@ export const playerCards = [
               description: '[Flash]\nDuring this turn, 1 Spirits gets +3000 BP.' }
         ],
     },
+    //Construction
+    {
+        id: 'magic-construction',
+        name: 'Construction',
+        image: '../images/Construction.webp', 
+        cost: 6,
+        symbol_cost:{"blue":3},
+        type: 'Magic',
+        color: 'blue',
+        effects: [
+            { timing: 'main', keyword:'deploy_from_trash', targetColors:['red', 'green', 'blue'], description: "[Main]\nDeploy every Red/Green/Blue Nexus cards from your Trash, without paying the costs" },
+            { timing: 'flash', keyword:'power up',power: 3000,duration: 'turn', 
+              target: { scope: 'any', type: 'spirit', count: 1 },
+              description: '[Flash]\nDuring this turn, 1 Spirits gets +3000 BP.' }
+        ],
+    },
+    {
+        id: 'magic-construction',
+        name: 'Construction',
+        image: '../images/Construction.webp', 
+        cost: 6,
+        symbol_cost:{"blue":3},
+        type: 'Magic',
+        color: 'blue',
+        effects: [
+            { timing: 'main', keyword:'deploy_from_trash', targetColors:['red', 'green', 'blue'], description: "[Main]\nDeploy every Red/Green/Blue Nexus cards from your Trash, without paying the costs" },
+            { timing: 'flash', keyword:'power up',power: 3000,duration: 'turn', 
+              target: { scope: 'any', type: 'spirit', count: 1 },
+              description: '[Flash]\nDuring this turn, 1 Spirits gets +3000 BP.' }
+        ],
+    },
+    {
+        id: 'magic-construction',
+        name: 'Construction',
+        image: '../images/Construction.webp', 
+        cost: 6,
+        symbol_cost:{"blue":3},
+        type: 'Magic',
+        color: 'blue',
+        effects: [
+            { timing: 'main', keyword:'deploy_from_trash', targetColors:['red', 'green', 'blue'], description: "[Main]\nDeploy every Red/Green/Blue Nexus cards from your Trash, without paying the costs" },
+            { timing: 'flash', keyword:'power up',power: 3000,duration: 'turn', 
+              target: { scope: 'any', type: 'spirit', count: 1 },
+              description: '[Flash]\nDuring this turn, 1 Spirits gets +3000 BP.' }
+        ],
+    },
     //The Burning Canyon
     {
         id: 'nexus-burning-canyon',
@@ -557,7 +603,7 @@ export const playerCards = [
         ],
         symbol: {"red":1},
     },
-        {
+    {
         id: 'nexus-burning-canyon',
         name: 'The Burning Canyon',
         image: '../images/The Burning Canyon.webp', 
@@ -571,5 +617,51 @@ export const playerCards = [
             { level: [2], timing: 'duringBattle', description: '[LV2] (Your Attack Step)\nSpirits you control get +1000BP.' }
         ],
         symbol: {"red":1},
+    },
+    //The Collapse of Battle Line
+    {
+        id: 'nexus-battle-line',
+        name: 'The Collapse of Battle Line',
+        image: '../images/The Collapse of Battle Line.webp', 
+        cost: 4,
+        symbol_cost:{"blue":2},
+        level:{ "level-1":{ "core": 0 }, "level-2":{ "core": 4 } },
+        type: 'Nexus', 
+        color: 'blue',
+        effects: [
+            { level: [1, 2], timing: 'permanent',keyword: 'add crush', count: 2, description: '[LV1][LV2] (Either Draw Step)\nWhen discarding cards from the opposing deck via [Crush] effects, discard +2 cards.' },
+            { level: [2], timing: 'duringBattle', keyword: 'force_max_level_on_crush', description: '[LV2] (Your Attack Step)\nEvery Spirit with [Crush] you control is treated as being on its highest level.' }
+        ],
+        symbol: {"blue":1},
+    },
+        {
+        id: 'nexus-battle-line',
+        name: 'The Collapse of Battle Line',
+        image: '../images/The Collapse of Battle Line.webp', 
+        cost: 4,
+        symbol_cost:{"blue":2},
+        level:{ "level-1":{ "core": 0 }, "level-2":{ "core": 4 } },
+        type: 'Nexus', 
+        color: 'blue',
+        effects: [
+            { level: [1, 2], timing: 'permanent',keyword: 'add crush', count: 2, description: '[LV1][LV2] (Either Draw Step)\nWhen discarding cards from the opposing deck via [Crush] effects, discard +2 cards.' },
+            { level: [2], timing: 'duringBattle', keyword: 'force_max_level_on_crush', description: '[LV2] (Your Attack Step)\nEvery Spirit with [Crush] you control is treated as being on its highest level.' }
+        ],
+        symbol: {"blue":1},
+    },
+        {
+        id: 'nexus-battle-line',
+        name: 'The Collapse of Battle Line',
+        image: '../images/The Collapse of Battle Line.webp', 
+        cost: 4,
+        symbol_cost:{"blue":2},
+        level:{ "level-1":{ "core": 0 }, "level-2":{ "core": 4 } },
+        type: 'Nexus', 
+        color: 'blue',
+        effects: [
+            { level: [1, 2], timing: 'permanent',keyword: 'add crush', count: 2, description: '[LV1][LV2] (Either Draw Step)\nWhen discarding cards from the opposing deck via [Crush] effects, discard +2 cards.' },
+            { level: [2], timing: 'duringBattle', keyword: 'force_max_level_on_crush', description: '[LV2] (Your Attack Step)\nEvery Spirit with [Crush] you control is treated as being on its highest level.' }
+        ],
+        symbol: {"blue":1},
     },
 ]

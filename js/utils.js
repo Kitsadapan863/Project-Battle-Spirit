@@ -1,6 +1,5 @@
 // js/utils.js
 
-// ... (getCardLevel function is the same) ...
 export function getCardLevel(card) {
     if (!card || !card.cores || !card.level) return { level: 0 };
     const currentCores = card.cores.length;
@@ -19,30 +18,65 @@ export function getCardLevel(card) {
     return { level: currentLevel };
 }
 
-
-// FIXED: Function now includes temporary BP buffs in calculation
+// *** START: อัปเกรดฟังก์ชัน getSpiritLevelAndBP ***
 export function getSpiritLevelAndBP(spiritCard, ownerKey, gameState) {
     if (!spiritCard || !spiritCard.cores || !spiritCard.level) return { level: 0, bp: 0, isBuffed: false };
     
-    const { level } = getCardLevel(spiritCard);
+    let { level } = getCardLevel(spiritCard);
     let currentBP = 0;
     let isBuffed = false;
+
+    // --- ตรรกะใหม่สำหรับ The Collapse of Battle Line ---
+    if (gameState && ownerKey) {
+        const owner = gameState[ownerKey];
+        // ตรวจสอบว่าอยู่ในเทิร์นและเฟสที่ถูกต้องหรือไม่
+        if (gameState.turn === ownerKey && gameState.phase === 'attack') {
+            // ตรวจสอบว่า Spirit ที่กำลังคำนวณอยู่มี Crush หรือไม่
+            const spiritHasCrush = spiritCard.effects && spiritCard.effects.some(e => e.keyword === 'crush');
+            
+            if (spiritHasCrush) {
+                // ค้นหา Nexus ที่มีเอฟเฟกต์ force_max_level_on_crush บนสนาม
+                const forceMaxLevelNexus = owner.field.find(card => 
+                    card.type === 'Nexus' && 
+                    card.effects && 
+                    card.effects.some(eff => 
+                        eff.keyword === 'force_max_level_on_crush' &&
+                        eff.level.includes(getCardLevel(card).level)
+                    )
+                );
+
+                if (forceMaxLevelNexus) {
+                    // ถ้าเจอ ให้บังคับเป็นเลเวลสูงสุด
+                    const maxLevel = Math.max(...Object.keys(spiritCard.level).map(l => parseInt(l.replace('level-', ''), 10)));
+                    if (level !== maxLevel) {
+                        console.log(`[Battle Line Effect] Forcing ${spiritCard.name} to its max level: ${maxLevel}`);
+                        level = maxLevel;
+                        isBuffed = true;
+                    }
+                }
+            }
+        }
+    }
+    // --- สิ้นสุดตรรกะใหม่ ---
 
     if (level > 0 && spiritCard.level[`level-${level}`]) {
         currentBP = spiritCard.level[`level-${level}`].bp || 0;
     }
     
-    // Apply permanent Nexus effects
+    // Apply permanent Nexus effects (เช่น Burning Canyon)
     if (gameState && ownerKey) {
         const owner = gameState[ownerKey];
         if (gameState.turn === ownerKey && gameState.phase === 'attack') {
             owner.field.forEach(card => {
-                if (card.id === 'nexus-burning-canyon') {
+                if (card.effects) {
                     const nexusLevel = getCardLevel(card).level;
-                    if (nexusLevel >= 2) {
-                        currentBP += 1000;
-                        isBuffed = true;
-                    }
+                    card.effects.forEach(eff => {
+                        // เพิ่ม BP จากเอฟเฟกต์อื่นๆ ที่ไม่ใช่ force max level
+                        if (eff.timing === 'duringBattle' && eff.level.includes(nexusLevel) && eff.description.includes('+1000BP')) {
+                             currentBP += 1000;
+                             isBuffed = true;
+                        }
+                    });
                 }
             });
         }
@@ -60,3 +94,4 @@ export function getSpiritLevelAndBP(spiritCard, ownerKey, gameState) {
     
     return { level: level, bp: currentBP, isBuffed: isBuffed };
 }
+// *** END: อัปเกรดฟังก์ชัน getSpiritLevelAndBP ***

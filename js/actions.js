@@ -609,6 +609,29 @@ export function confirmMagicPayment(gameState) {
     
     if (effectToUse) {
         switch (effectToUse.keyword) {
+            case 'deploy_from_trash':
+                const nexusesToDeploy = [];
+                const remainingTrash = [];
+
+                // ค้นหา Nexus สีที่ถูกต้องในกองทิ้ง
+                gameState.player.cardTrash.forEach(card => {
+                    if (card.type === 'Nexus' && effectToUse.targetColors.includes(card.color)) {
+                        nexusesToDeploy.push(card);
+                    } else {
+                        remainingTrash.push(card);
+                    }
+                });
+
+                if (nexusesToDeploy.length > 0) {
+                    console.log(`[Construction Effect] Deploying ${nexusesToDeploy.length} Nexuses from Trash.`);
+                    // นำ Nexus ที่พบไปวางบนสนาม
+                    gameState.player.field.push(...nexusesToDeploy);
+                    // อัปเดตกองทิ้งโดยลบ Nexus ที่นำไปวางบนสนามออก
+                    gameState.player.cardTrash = remainingTrash;
+                }
+
+                moveUsedMagicToTrash(cardToUse.uid, gameState);
+                break;
             case 'core charge':
                 if (effectToUse.buff_type) {
                     gameState.player.tempBuffs.push({ type: effectToUse.buff_type });
