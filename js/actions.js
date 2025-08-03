@@ -2,13 +2,17 @@
 import { getSpiritLevelAndBP, getCardLevel } from './utils.js';
 import { resolveTriggeredEffects } from './effects.js';
 
-// ... (destroyCard, cleanupField, performRefreshStep, etc. are the same) ...
+// --- HELPER FUNCTIONS ---
+
 function destroyCard(cardUid, ownerKey, gameState) {
     const owner = gameState[ownerKey];
     const cardIndex = owner.field.findIndex(c => c.uid === cardUid);
 
-    if (cardIndex === -1) return;
-
+    if (cardIndex === -1) {
+        console.error(`Card with UID ${cardUid} not found in ${ownerKey}'s field.`);
+        return;
+    }
+    
     const [destroyedCard] = owner.field.splice(cardIndex, 1);
 
     if (destroyedCard.cores && destroyedCard.cores.length > 0) {
@@ -18,6 +22,37 @@ function destroyCard(cardUid, ownerKey, gameState) {
 
     owner.cardTrash.push(destroyedCard);
     console.log(`Destroyed: ${ownerKey}'s ${destroyedCard.name}`);
+}
+
+function destroyCards(uids, gameState) {
+    uids.forEach(uid => {
+        let ownerKey = '';
+        if (gameState.player.field.some(c => c.uid === uid)) {
+            ownerKey = 'player';
+        } else if (gameState.opponent.field.some(c => c.uid === uid)) {
+            ownerKey = 'opponent';
+        }
+
+        if (ownerKey) {
+            destroyCard(uid, ownerKey, gameState);
+        } else {
+            console.error(`destroyCards could not find card with UID: ${uid} on any field.`);
+        }
+    });
+}
+
+
+function fizzleMagic(cardUid, gameState) {
+    console.log("Effect fizzled, not enough valid targets.");
+    moveUsedMagicToTrash(cardUid, gameState);
+}
+
+function moveUsedMagicToTrash(cardUid, gameState) {
+    const cardIndex = gameState.player.hand.findIndex(c => c.uid === cardUid);
+    if (cardIndex > -1) {
+        const [usedCard] = gameState.player.hand.splice(cardIndex, 1);
+        gameState.player.cardTrash.push(usedCard);
+    }
 }
 
 function cleanupField(gameState) {
@@ -35,6 +70,35 @@ function cleanupField(gameState) {
     }
 }
 
+function setupTargetingState(effect, onCompleteCallback, gameState) {
+    gameState.targetingState = {
+        isTargeting: true,
+        forEffect: effect,
+        onTarget: onCompleteCallback,
+    };
+}
+
+function findValidTargets(targetInfo, gameState) {
+    let potentialTargets = [];
+    if (targetInfo.scope === 'opponent' || targetInfo.scope === 'any') {
+        potentialTargets.push(...gameState.opponent.field);
+    }
+    if (targetInfo.scope === 'player' || targetInfo.scope === 'any') {
+        potentialTargets.push(...gameState.player.field);
+    }
+
+    return potentialTargets.filter(card => {
+        const cardOwnerKey = gameState.player.field.some(c => c.uid === card.uid) ? 'player' : 'opponent';
+        // This check is important for effects that can target 'any' spirit
+        const correctOwner = targetInfo.scope === 'any' || targetInfo.scope === cardOwnerKey;
+        
+        return correctOwner && 
+               card.type.toLowerCase() === 'spirit' && // Ensure we only target spirits for BP buffs
+               (!targetInfo.bpOrLess || getSpiritLevelAndBP(card, cardOwnerKey, gameState).bp <= targetInfo.bpOrLess)
+    });
+}
+
+// --- CORE ACTION FUNCTIONS ---
 
 export function performRefreshStep(playerType, gameState) {
     const player = gameState[playerType];
@@ -61,13 +125,10 @@ export function checkGameOver(gameState) {
     return false;
 }
 
-// FIXED: Corrected the cost calculation logic
 export function calculateCost(cardToSummon, playerType, gameState) {
     const player = gameState[playerType];
     const baseCost = cardToSummon.cost;
     let totalReduction = 0;
-
-    // 1. Count all symbols on the player's field
     const fieldSymbols = { red: 0, purple: 0, green: 0, white: 0, blue: 0, yellow: 0 };
     player.field.forEach(card => {
         if (card.symbol) {
@@ -78,8 +139,6 @@ export function calculateCost(cardToSummon, playerType, gameState) {
             }
         }
     });
-
-    // 2. Calculate the reduction based on the card's symbol_cost
     if (cardToSummon.symbol_cost) {
         let potentialReduction = 0;
         for (const color in cardToSummon.symbol_cost) {
@@ -87,19 +146,14 @@ export function calculateCost(cardToSummon, playerType, gameState) {
                 potentialReduction += fieldSymbols[color];
             }
         }
-
         let maxReduction = 0;
         for (const color in cardToSummon.symbol_cost) {
             maxReduction += cardToSummon.symbol_cost[color];
         }
-
-        // The actual reduction is the lesser of the available symbols or the max allowed reduction
         totalReduction = Math.min(potentialReduction, maxReduction);
     }
-
     return Math.max(0, baseCost - totalReduction);
 }
-
 
 export function calculateTotalSymbols(spiritCard) {
     if (!spiritCard || !spiritCard.symbol) return 1;
@@ -127,14 +181,12 @@ export function summonSpiritAI(playerType, cardUid, gameState) {
         const coreForLevel1 = player.reserve.shift();
         summonedCard.cores.push(coreForLevel1);
         player.field.push(summonedCard);
-        // Initialize tempBuffs array
         summonedCard.tempBuffs = [];
         return true;
     }
     return false;
 }
 
-// MODIFIED: Function now searches both player and opponent fields for the target
 export function applyPowerUpEffect(cardUid, power, duration, gameState) {
     const targetSpirit = gameState.player.field.find(s => s.uid === cardUid) || gameState.opponent.field.find(s => s.uid === cardUid);
     if (targetSpirit) {
@@ -146,7 +198,6 @@ export function applyPowerUpEffect(cardUid, power, duration, gameState) {
     }
 }
 
-// NEW: Function to clear buffs at the end of a battle
 export function clearBattleBuffs(playerKey, gameState) {
     gameState[playerKey].field.forEach(spirit => {
         if (spirit.tempBuffs && spirit.tempBuffs.length > 0) {
@@ -155,7 +206,6 @@ export function clearBattleBuffs(playerKey, gameState) {
     });
 }
 
-// MODIFIED: Function now only clears buffs at the end of a turn
 export function clearTemporaryBuffs(playerKey, gameState) {
     gameState[playerKey].field.forEach(spirit => {
         if (spirit.tempBuffs && spirit.tempBuffs.length > 0) {
@@ -164,48 +214,42 @@ export function clearTemporaryBuffs(playerKey, gameState) {
     });
 }
 
-// ... (handleSpiritClick, drawCard, moveCore, initiateSummon, etc. are mostly the same) ...
 export function handleSpiritClick(cardData, gameState) {
-    // MODIFIED: When a target is clicked, update targetingState and return true
     if (gameState.targetingState.isTargeting) {
-        if (cardData.type === 'Spirit') {
-            const { scope } = gameState.targetingState.forEffect.target;
-            const isPlayerCard = gameState.player.field.some(c => c.uid === cardData.uid);
-            const isOpponentCard = gameState.opponent.field.some(c => c.uid === cardData.uid);
+        const effectTargetInfo = gameState.targetingState.forEffect.target;
+        const cardOwnerKey = gameState.player.field.some(c => c.uid === cardData.uid) ? 'player' : 'opponent';
 
-            let isValidTarget = false;
-            if (scope === 'player' && isPlayerCard) isValidTarget = true;
-            if (scope === 'opponent' && isOpponentCard) isValidTarget = true;
-            if (scope === 'any' && (isPlayerCard || isOpponentCard)) isValidTarget = true;
-
-            if (isValidTarget) {
-                gameState.targetingState.onTarget(cardData.uid);
-                gameState.targetingState = { isTargeting: false, forEffect: null, onTarget: null };
-                return true;
+        let isValidTarget = false;
+        if ((effectTargetInfo.scope === 'any' || effectTargetInfo.scope === cardOwnerKey) && cardData.type.toLowerCase() === effectTargetInfo.type) {
+             if (!effectTargetInfo.bpOrLess || getSpiritLevelAndBP(cardData, cardOwnerKey, gameState).bp <= effectTargetInfo.bpOrLess) {
+                isValidTarget = true;
             }
         }
-        return false; // Clicked on an invalid target
+        
+        if (isValidTarget) {
+            gameState.targetingState.onTarget(cardData.uid);
+            return true;
+        }
+        return false;
     }
-    
+
     if (cardData.type !== 'Spirit') return false;
 
     if (gameState.turn === 'player' && gameState.phase === 'attack' && !cardData.isExhausted && !gameState.attackState.isAttacking && gameState.gameTurn > 1) {
         const attacker = gameState.player.field.find(s => s.uid === cardData.uid);
         if (attacker) {
             attacker.isExhausted = true;
-            
             gameState.attackState = { isAttacking: true, attackerUid: cardData.uid, defender: 'opponent', blockerUid: null, isClash: false };
             resolveTriggeredEffects(attacker, 'whenAttacks', 'player', gameState);
-
             enterFlashTiming(gameState, 'beforeBlock');
-            return 'attack';
+            return true;
         }
-    } 
+    }
     else if (gameState.attackState.isAttacking && gameState.attackState.defender === 'player' && !cardData.isExhausted && !gameState.flashState.isActive) {
         const isPlayerCard = gameState.player.field.some(c => c.uid === cardData.uid);
         if (isPlayerCard) {
             declareBlock(cardData.uid, gameState);
-            return 'block';
+            return true;
         }
     }
     return false;
@@ -257,29 +301,22 @@ export function moveCore(coreId, from, sourceCardUid, targetZoneId, targetCardUi
 export function initiateSummon(cardUid, gameState) {
     if (gameState.turn !== 'player' || gameState.phase !== 'main' || gameState.summoningState.isSummoning || gameState.placementState.isPlacing) return;
     const cardToSummon = gameState.player.hand.find(c => c.uid === cardUid);
-    
     if (!cardToSummon || (cardToSummon.type !== 'Spirit' && cardToSummon.type !== 'Nexus')) return;
-
     const finalCost = calculateCost(cardToSummon, 'player', gameState);
     const totalAvailableCores = gameState.player.reserve.length + gameState.player.field.reduce((sum, card) => sum + (card.cores ? card.cores.length : 0), 0);
-    
     const minCoresNeeded = cardToSummon.type === 'Spirit' ? 1 : 0;
-
     if (totalAvailableCores < finalCost + minCoresNeeded) {
         return;
     }
-
     gameState.summoningState = { isSummoning: true, cardToSummon, costToPay: finalCost, selectedCores: [] };
 }
 
 export function selectCoreForPayment(coreId, from, spiritUid, gameState) {
     const paymentState = gameState.summoningState.isSummoning ? gameState.summoningState : gameState.magicPaymentState.isPaying ? gameState.magicPaymentState : null;
     if (!paymentState) return;
-
     const { selectedCores, costToPay } = paymentState;
     const coreInfo = { coreId, from: from === 'field' ? 'field' : 'reserve', spiritUid };
     const existingIndex = selectedCores.findIndex(c => c.coreId === coreId);
-
     if (existingIndex > -1) {
         selectedCores.splice(existingIndex, 1);
     } else if (selectedCores.length < costToPay) {
@@ -314,17 +351,12 @@ export function confirmSummon(gameState) {
     cleanupField(gameState);
     const cardIndex = gameState.player.hand.findIndex(c => c.uid === cardToSummon.uid);
     const [summonedCard] = gameState.player.hand.splice(cardIndex, 1);
-    
     summonedCard.isExhausted = false;
     summonedCard.cores = [];
-    // Initialize tempBuffs array on summon
     summonedCard.tempBuffs = [];
     gameState.player.field.push(summonedCard);
-    
     gameState.summoningState = { isSummoning: false, cardToSummon: null, costToPay: 0, selectedCores: [] };
-    
     gameState.placementState = { isPlacing: true, targetSpiritUid: summonedCard.uid };
-    
     return true;
 }
 
@@ -333,14 +365,13 @@ export function selectCoreForPlacement(coreId, from, sourceUid, gameState) {
     const { targetSpiritUid } = gameState.placementState;
     const targetCard = gameState.player.field.find(s => s.uid === targetSpiritUid);
     if (!targetCard) return;
-
     if (sourceUid === targetSpiritUid) {
         const coreIndex = targetCard.cores.findIndex(c => c.id === coreId);
         if (coreIndex > -1) {
             const [movedCore] = targetCard.cores.splice(coreIndex, 1);
             gameState.player.reserve.push(movedCore);
         }
-    } 
+    }
     else {
         let sourceArray;
         let sourceCard = null;
@@ -350,24 +381,16 @@ export function selectCoreForPlacement(coreId, from, sourceUid, gameState) {
             sourceCard = gameState.player.field.find(s => s.uid === sourceUid);
             sourceArray = sourceCard ? sourceCard.cores : undefined;
         }
-        
         if (!sourceArray) return;
-        
         const coreIndex = sourceArray.findIndex(c => c.id === coreId);
         if (coreIndex > -1) {
             if (sourceCard && sourceCard.type === 'Spirit' && sourceArray.length === 1) {
-                gameState.coreRemovalConfirmationState = {
-                    isConfirming: true,
-                    coreId: coreId,
-                    from: from,
-                    sourceUid: sourceUid,
-                };
+                gameState.coreRemovalConfirmationState = { isConfirming: true, coreId: coreId, from: from, sourceUid: sourceUid };
                 return;
             }
-
             const [movedCore] = sourceArray.splice(coreIndex, 1);
             targetCard.cores.push(movedCore);
-            cleanupField(gameState); 
+            cleanupField(gameState);
         }
     }
 }
@@ -388,19 +411,14 @@ function resolveBattle(gameState) {
     const blockerOwner = gameState.player.field.some(s => s.uid === blockerUid) ? 'player' : 'opponent';
     const attacker = gameState[attackerOwner].field.find(s => s.uid === attackerUid);
     const blocker = gameState[blockerOwner].field.find(s => s.uid === blockerUid);
-
     if (!attacker || !blocker) {
-        // This case can happen if a Spirit is removed by an effect before battle resolution
-        // Clear battle buffs for any remaining participant
         if (attacker) clearBattleBuffs(attackerOwner, gameState);
         if (blocker) clearBattleBuffs(blockerOwner, gameState);
         gameState.attackState = { isAttacking: false, attackerUid: null, defender: null, blockerUid: null };
         return;
     }
-
     const attackerResult = getSpiritLevelAndBP(attacker, attackerOwner, gameState);
     const blockerResult = getSpiritLevelAndBP(blocker, blockerOwner, gameState);
-
     if (attackerResult.bp > blockerResult.bp) {
         destroyCard(blockerUid, blockerOwner, gameState);
     } else if (blockerResult.bp > attackerResult.bp) {
@@ -409,22 +427,17 @@ function resolveBattle(gameState) {
         destroyCard(attackerUid, attackerOwner, gameState);
         destroyCard(blockerUid, blockerOwner, gameState);
     }
-    
-    // Clear battle-only buffs after battle concludes
     clearBattleBuffs(attackerOwner, gameState);
     clearBattleBuffs(blockerOwner, gameState);
-
     gameState.attackState = { isAttacking: false, attackerUid: null, defender: null, blockerUid: null };
 }
 
 export function declareBlock(blockerUid, gameState) {
     if (!gameState.attackState.isAttacking) return;
-    
     const blocker = gameState.player.field.find(s => s.uid === blockerUid) || gameState.opponent.field.find(s => s.uid === blockerUid);
     if (blocker) {
         blocker.isExhausted = true;
     }
-
     gameState.attackState.blockerUid = blockerUid;
     enterFlashTiming(gameState, 'afterBlock');
 }
@@ -435,11 +448,9 @@ export function takeLifeDamage(gameState) {
         gameState.attackState = { isAttacking: false, attackerUid: null, defender: null, blockerUid: null };
         return;
     }
-    
     const attackingPlayer = defender === 'opponent' ? 'player' : 'opponent';
     const defendingPlayer = defender;
     const attacker = gameState[attackingPlayer].field.find(s => s.uid === attackerUid);
-
     if (attacker) {
         const damage = calculateTotalSymbols(attacker);
         for (let i = 0; i < damage; i++) {
@@ -449,10 +460,7 @@ export function takeLifeDamage(gameState) {
             }
         }
     }
-    
-    // Clear battle-only buffs after the attack (since it's now over)
     clearBattleBuffs(attackingPlayer, gameState);
-
     gameState.attackState = { isAttacking: false, attackerUid: null, defender: null, blockerUid: null };
     checkGameOver(gameState);
 }
@@ -468,30 +476,24 @@ export function enterFlashTiming(gameState, timing) {
 
 export function passFlash(gameState) {
     if (!gameState.flashState.isActive) return null;
-
     const { priority, hasPassed } = gameState.flashState;
     const otherPlayer = priority === 'player' ? 'opponent' : 'player';
-
     if (hasPassed[otherPlayer]) {
         return resolveFlashWindow(gameState);
     }
-
     hasPassed[priority] = true;
     gameState.flashState.priority = otherPlayer;
-    
     return null;
 }
 
 export function resolveFlashWindow(gameState) {
     gameState.flashState.isActive = false;
-    
     if (gameState.flashState.timing === 'beforeBlock') {
-        if (gameState.attackState.defender === 'opponent') { // AI is defending
+        if (gameState.attackState.defender === 'opponent') {
             const attacker = gameState.player.field.find(s => s.uid === gameState.attackState.attackerUid);
             const potentialBlockers = gameState.opponent.field.filter(s => !s.isExhausted && s.type === 'Spirit');
             potentialBlockers.sort((a,b) => getSpiritLevelAndBP(b, 'opponent', gameState).bp - getSpiritLevelAndBP(a, 'opponent', gameState).bp);
             const bestBlocker = potentialBlockers.length > 0 ? potentialBlockers[0] : null;
-
             if (gameState.attackState.isClash && bestBlocker) {
                  console.log("Clash is active! Opponent is forced to block.");
                  declareBlock(bestBlocker.uid, gameState);
@@ -510,42 +512,35 @@ export function resolveFlashWindow(gameState) {
     return null;
 }
 
-
-export function initiateMagicPayment(cardUid, timing, gameState) {
+export function initiateMagicPayment(cardUid, timing, effectToUse, gameState) {
     const cardToUse = gameState.player.hand.find(c => c.uid === cardUid);
     if (!cardToUse) return;
-
+    const effect = effectToUse || cardToUse.effects.find(e => e.timing === timing);
+    if (!effect) return;
     const isFlashTiming = gameState.flashState.isActive && gameState.flashState.priority === 'player';
     const isMainStep = gameState.phase === 'main';
-
-    const effect = cardToUse.effects.find(e => e.timing === timing);
-    if (!effect) return;
-
     if (timing === 'flash' && !isFlashTiming && !isMainStep) return;
     if (timing === 'main' && !isMainStep) return;
-
     const finalCost = calculateCost(cardToUse, 'player', gameState);
     const totalAvailableCores = gameState.player.reserve.length + gameState.player.field.reduce((sum, card) => sum + (card.cores ? card.cores.length : 0), 0);
-
     if (totalAvailableCores < finalCost) {
         console.log("Not enough available cores to use magic.");
         return;
     }
-
     gameState.magicPaymentState = {
         isPaying: true,
         cardToUse: cardToUse,
         costToPay: finalCost,
         selectedCores: [],
-        timing: timing
+        timing: timing,
+        effectToUse: effect
     };
 }
 
 export function confirmMagicPayment(gameState) {
-    const { isPaying, cardToUse, costToPay, selectedCores, timing } = gameState.magicPaymentState;
+    const { isPaying, cardToUse, costToPay, selectedCores, timing, effectToUse } = gameState.magicPaymentState;
     if (!isPaying || selectedCores.length < costToPay) return false;
 
-    // --- Payment Logic (same as before) ---
     for (const coreInfo of selectedCores) {
         let sourceArray;
         if (coreInfo.from === 'reserve') {
@@ -562,74 +557,82 @@ export function confirmMagicPayment(gameState) {
             }
         }
     }
-
-    // --- Effect Resolution Logic ---
-    const effect = cardToUse.effects.find(e => e.timing === timing);
     
-    if (effect) {
-        switch (effect.keyword) {
+    gameState.magicPaymentState = { isPaying: false, cardToUse: null, costToPay: 0, selectedCores: [], timing: null, effectToUse: null };
+    
+    if (effectToUse) {
+        switch (effectToUse.keyword) {
+            case 'draw':
+                for (let i = 0; i < effectToUse.quantity; i++) {
+                    drawCard('player', gameState);
+                }
+                moveUsedMagicToTrash(cardToUse.uid, gameState);
+                break;
+            
+            // *** START FIX: เพิ่ม case 'power up' ***
             case 'power up':
-                const targetInfo = effect.target;
-                let validTargets = [];
-                if (targetInfo.scope === 'player' || targetInfo.scope === 'any') {
-                    validTargets.push(...gameState.player.field.filter(c => c.type === 'Spirit'));
+                const validPowerUpTargets = findValidTargets(effectToUse.target, gameState);
+                if (validPowerUpTargets.length > 0) {
+                    setupTargetingState(effectToUse, (selectedUid) => {
+                        applyPowerUpEffect(selectedUid, effectToUse.power, effectToUse.duration, gameState);
+                        moveUsedMagicToTrash(cardToUse.uid, gameState);
+                        gameState.targetingState = { isTargeting: false };
+                    }, gameState);
+                } else {
+                    fizzleMagic(cardToUse.uid, gameState);
                 }
-                if (targetInfo.scope === 'opponent' || targetInfo.scope === 'any') {
-                    validTargets.push(...gameState.opponent.field.filter(c => c.type === 'Spirit'));
+                break;
+            // *** END FIX ***
+
+            case 'destroy':
+                const validDestroyTargets = findValidTargets(effectToUse.target, gameState);
+                if (validDestroyTargets.length >= effectToUse.target.count) {
+                    setupTargetingState(effectToUse, (selectedUid) => {
+                        destroyCards([selectedUid], gameState);
+                        moveUsedMagicToTrash(cardToUse.uid, gameState);
+                        gameState.targetingState = { isTargeting: false };
+                    }, gameState);
+                } else {
+                    fizzleMagic(cardToUse.uid, gameState);
                 }
-                // FIXED: Check for targets *after* payment
-                if (validTargets.length > 0) {
-                    gameState.targetingState = {
-                        isTargeting: true,
-                        forEffect: effect,
-                        onTarget: (targetUid) => {
-                            applyPowerUpEffect(targetUid, effect.power, effect.duration, gameState);
-                            const cardIndex = gameState.player.hand.findIndex(c => c.uid === cardToUse.uid);
-                            if (cardIndex > -1) {
-                                const [usedCard] = gameState.player.hand.splice(cardIndex, 1);
-                                gameState.player.cardTrash.push(usedCard);
-                            }
+                break;
+
+            case 'destroy_combo':
+                const spiritTargetInfo = effectToUse.target.spirit;
+                const validSpiritTargets = findValidTargets(spiritTargetInfo, gameState);
+
+                if (validSpiritTargets.length > 0) {
+                    const onSpiritTargeted = (selectedSpiritUid) => {
+                        destroyCards([selectedSpiritUid], gameState);
+                        
+                        const nexusTargetInfo = effectToUse.target.nexus;
+                        const validNexusTargets = findValidTargets(nexusTargetInfo, gameState);
+
+                        if (validNexusTargets.length > 0) {
+                            const onNexusTargeted = (selectedNexusUid) => {
+                                destroyCards([selectedNexusUid], gameState);
+                                moveUsedMagicToTrash(cardToUse.uid, gameState);
+                                gameState.targetingState = { isTargeting: false };
+                            };
+                            setupTargetingState({ ...effectToUse, target: nexusTargetInfo }, onNexusTargeted, gameState);
+                        } else {
+                            moveUsedMagicToTrash(cardToUse.uid, gameState);
+                            gameState.targetingState = { isTargeting: false };
                         }
                     };
+                    setupTargetingState({ ...effectToUse, target: spiritTargetInfo }, onSpiritTargeted, gameState);
                 } else {
-                    console.log("Power up effect fizzles: no valid spirit targets on the board.");
-                    const cardIndex = gameState.player.hand.findIndex(c => c.uid === cardToUse.uid);
-                    if (cardIndex > -1) {
-                        const [usedCard] = gameState.player.hand.splice(cardIndex, 1);
-                        gameState.player.cardTrash.push(usedCard);
-                    }
+                    fizzleMagic(cardToUse.uid, gameState);
                 }
                 break;
             
-            case 'draw':
-                for (let i = 0; i < effect.quantity; i++) {
-                    drawCard('player', gameState);
-                }
-                const cardIndexDraw = gameState.player.hand.findIndex(c => c.uid === cardToUse.uid);
-                if (cardIndexDraw > -1) {
-                    const [usedCard] = gameState.player.hand.splice(cardIndexDraw, 1);
-                    gameState.player.cardTrash.push(usedCard);
-                }
-                break;
-
             default:
-                const cardIndexDefault = gameState.player.hand.findIndex(c => c.uid === cardToUse.uid);
-                if (cardIndexDefault > -1) {
-                    const [usedCard] = gameState.player.hand.splice(cardIndexDefault, 1);
-                    gameState.player.cardTrash.push(usedCard);
-                }
+                moveUsedMagicToTrash(cardToUse.uid, gameState);
                 break;
         }
     } else {
-        const cardIndex = gameState.player.hand.findIndex(c => c.uid === cardToUse.uid);
-        if (cardIndex > -1) {
-            const [usedCard] = gameState.player.hand.splice(cardIndex, 1);
-            gameState.player.cardTrash.push(usedCard);
-        }
+        moveUsedMagicToTrash(cardToUse.uid, gameState);
     }
-    
-    console.log(`Used Magic: ${cardToUse.name} (${timing})`);
-    gameState.magicPaymentState = { isPaying: false, cardToUse: null, costToPay: 0, selectedCores: [], timing: null };
 
     if (timing === 'flash') {
         gameState.flashState.hasPassed = { player: false, opponent: false };
@@ -639,20 +642,16 @@ export function confirmMagicPayment(gameState) {
     return true;
 }
 
+
 export function cancelMagicPayment(gameState) {
     if (!gameState.magicPaymentState.isPaying) return;
     gameState.magicPaymentState = { isPaying: false, cardToUse: null, costToPay: 0, selectedCores: [], timing: null };
 }
 export function initiateDiscard(count, gameState) {
     if (count > 0) {
-        gameState.discardState = {
-            isDiscarding: true,
-            count: count,
-            cardToDiscard: null
-        };
+        gameState.discardState = { isDiscarding: true, count: count, cardToDiscard: null };
     }
 }
-
 export function selectCardForDiscard(cardUid, gameState) {
     if (!gameState.discardState.isDiscarding) return;
     if (gameState.discardState.cardToDiscard === cardUid) {
@@ -661,19 +660,15 @@ export function selectCardForDiscard(cardUid, gameState) {
         gameState.discardState.cardToDiscard = cardUid;
     }
 }
-
 export function confirmDiscard(gameState) {
     const { isDiscarding, cardToDiscard } = gameState.discardState;
     if (!isDiscarding || !cardToDiscard) return false;
-
     const cardIndex = gameState.player.hand.findIndex(c => c.uid === cardToDiscard);
     if (cardIndex > -1) {
         const [discardedCard] = gameState.player.hand.splice(cardIndex, 1);
         gameState.player.cardTrash.push(discardedCard);
-        
         gameState.discardState.count--;
         gameState.discardState.cardToDiscard = null;
-
         if (gameState.discardState.count <= 0) {
             gameState.discardState.isDiscarding = false;
         }
@@ -681,23 +676,19 @@ export function confirmDiscard(gameState) {
     }
     return false;
 }
-
 export function cancelCoreRemoval(gameState) {
     if (!gameState.coreRemovalConfirmationState.isConfirming) return;
     gameState.coreRemovalConfirmationState = { isConfirming: false, coreId: null, from: null, sourceUid: null };
 }
-
 export function confirmCoreRemoval(gameState) {
     const { isConfirming, coreId, from, sourceUid } = gameState.coreRemovalConfirmationState;
     if (!isConfirming) return false;
-
     const { targetSpiritUid } = gameState.placementState;
     const targetCard = gameState.player.field.find(s => s.uid === targetSpiritUid);
     if (!targetCard) {
         cancelCoreRemoval(gameState);
         return false;
     }
-    
     let sourceArray;
     if (from === 'reserve') {
         sourceArray = gameState.player.reserve;
@@ -705,7 +696,6 @@ export function confirmCoreRemoval(gameState) {
         const sourceCard = gameState.player.field.find(s => s.uid === sourceUid);
         sourceArray = sourceCard ? sourceCard.cores : undefined;
     }
-
     if (sourceArray) {
         const coreIndex = sourceArray.findIndex(c => c.id === coreId);
         if (coreIndex > -1) {
@@ -714,7 +704,6 @@ export function confirmCoreRemoval(gameState) {
             cleanupField(gameState);
         }
     }
-
     cancelCoreRemoval(gameState);
     return true;
 }

@@ -28,32 +28,31 @@ export const allCards = [
             { level: [1, 2, 3], timing: 'whenAttacks',keyword:'clash', description: "[LV1][LV2][LV3] [Clash]\n(When Attacks)\nThe opponent must block if possible." }
         ],
         symbol: {"red":1},
-    },
-        {
-        id: 'card-siegwurm',
-        name: 'The ThunderEmperorDragon Siegwurm',
-        image: '../images/The ThunderEmperorDragon Siegwurm.webp',
-        cost: 6,
-        symbol_cost:{"red":3},
-        level:{ "level-1":{ "core": 1, "bp": 4000 }, "level-2":{ "core": 3, "bp": 6000 }, "level-3":{ "core": 5, "bp": 9000 } },
+    },{
+        id: 'card-scout-dragno',
+        name: 'The Scout Dragno',
+        image: '../images/The Scout Dragno.webp',
+        cost: 2,
+        symbol_cost:{"red":1},
+        level:{ "level-1":{ "core": 1, "bp": 2000 }, "level-2":{ "core": 2, "bp": 3000 }},
         type: 'Spirit', color: 'red',
-        family: ["Astral Dragon", "Ancient Dragon"], 
+        family: ["Dragon"], 
         effects: [
-            { level: [1, 2, 3], timing: 'whenAttacks',keyword:'clash', description: "[LV1][LV2][LV3] [Clash]\n(When Attacks)\nThe opponent must block if possible." }
+            { level: [1, 2], timing: 'whenAttacks',keyword:'power up',power:2000,duration: 'turn', description: "[LV1][LV2]\n(When Attacks)\nThis spirit gets + 2000BP until end of turn." }
         ],
         symbol: {"red":1},
     },
-        {
-        id: 'card-siegwurm',
-        name: 'The ThunderEmperorDragon Siegwurm',
-        image: '../images/The ThunderEmperorDragon Siegwurm.webp',
-        cost: 6,
-        symbol_cost:{"red":3},
-        level:{ "level-1":{ "core": 1, "bp": 4000 }, "level-2":{ "core": 3, "bp": 6000 }, "level-3":{ "core": 5, "bp": 9000 } },
+    {
+        id: 'card-scout-dragno',
+        name: 'The Scout Dragno',
+        image: '../images/The Scout Dragno.webp',
+        cost: 2,
+        symbol_cost:{"red":1},
+        level:{ "level-1":{ "core": 1, "bp": 2000 }, "level-2":{ "core": 2, "bp": 3000 }},
         type: 'Spirit', color: 'red',
-        family: ["Astral Dragon", "Ancient Dragon"], 
+        family: ["Dragon"], 
         effects: [
-            { level: [1, 2, 3], timing: 'whenAttacks',keyword:'clash', description: "[LV1][LV2][LV3] [Clash]\n(When Attacks)\nThe opponent must block if possible." }
+            { level: [1, 2], timing: 'whenAttacks',keyword:'power up',power:2000,duration: 'turn', description: "[LV1][LV2]\n(When Attacks)\nThis spirit gets + 2000BP until end of turn." }
         ],
         symbol: {"red":1},
     },
@@ -152,7 +151,7 @@ export const allCards = [
             { timing: 'main', keyword:'draw', quantity: 2, description: '[Main]\nDraw 2 cards from your deck.' },
             // Brave Draw ส่วนใหญ่จะเพิ่มพลังให้ฝั่งตัวเอง
             { timing: 'flash', keyword: 'power up', power: 2000, duration: 'battle', 
-              target: { scope: 'player', count: 1 }, 
+              target: { scope: 'player', type: 'spirit', count: 1 }, 
               description: '[Flash]\nDuring this battle, 1 of your Spirits gets +2000 BP.' }
         ],
     },
@@ -167,8 +166,41 @@ export const allCards = [
         effects: [
             { timing: 'main', keyword:'draw', quantity:2, description: '[Main]\nDraw 2 cards from your deck.' },
             { timing: 'flash', keyword:'power up',power: 2000,duration: 'turn', 
-              target: { scope: 'any', count: 1 },
+              target: { scope: 'any', type: 'spirit', count: 1 },
                description: '[Flash]\nDuring this turn, 1 Spirits gets +2000 BP.' }
+        ],
+    },
+{
+        id: 'magic-victory-fire',
+        name: 'Victory Fire',
+        image: '../images/Victory Fire.webp',
+        cost: 5,
+        symbol_cost:{"red":2},
+        type: 'Magic',
+        color: 'red',
+        effects: [
+            { 
+                timing: 'flash', 
+                choiceId: 'vf_flash', // ID สำหรับจัดกลุ่มตัวเลือก
+                choiceText: 'ทำลาย Spirit BP<=3000 2 ใบ', // ข้อความบนปุ่ม
+                keyword: 'destroy',
+                target: { scope: 'opponent', type: 'spirit', count: 2, bpOrLess: 3000 },
+                // เงื่อนไขที่ต้อง erfüllt ก่อนตัวเลือกนี้จะปรากฏ
+                prerequisite: (gs) => gs.opponent.field.filter(c => c.type === 'Spirit' && getSpiritLevelAndBP(c, 'opponent', gs).bp <= 3000).length >= 2,
+                description: '[Flash]\nDestroy two opposing 3000 BP or less Spirits.'
+            },
+            { 
+                timing: 'flash', 
+                choiceId: 'vf_flash',
+                choiceText: 'ทำลาย Spirit BP<=3000 1 ใบ และ Nexus 1 ใบ',
+                keyword: 'destroy_combo', // Keyword ใหม่สำหรับเป้าหมายหลายประเภท
+                target: {
+                    spirit: { scope: 'opponent', type: 'spirit', count: 1, bpOrLess: 3000 },
+                    nexus: { scope: 'opponent', type: 'nexus', count: 1 }
+                },
+                prerequisite: (gs) => gs.opponent.field.some(c => c.type === 'Spirit' && getSpiritLevelAndBP(c, 'opponent', gs).bp <= 3000),
+                description: '[Flash]\nOr, destroy an opposing 3000 BP or less Spirit and an opposing Nexus.'
+            }
         ],
     },
     {

@@ -131,14 +131,16 @@ function createCardElement(cardData, location, owner, gameState, callbacks) {
         }
 
         // MODIFIED: Add targeting highlight based on scope
-        if (gameState.targetingState.isTargeting && cardData.type === 'Spirit' && gameState.targetingState.forEffect.target) {
-            const { scope } = gameState.targetingState.forEffect.target;
-            const isPlayerCard = (owner === 'player');
-            const isOpponentCard = (owner === 'opponent');
+        // MODIFIED: Add highlight based on detailed targeting info
+        if (gameState.targetingState.isTargeting && gameState.targetingState.forEffect.target) {
+            const targetInfo = gameState.targetingState.forEffect.target;
+            const cardOwner = owner;
 
-            if ((scope === 'player' && isPlayerCard) ||
-                (scope === 'opponent' && isOpponentCard) ||
-                (scope === 'any' && (isPlayerCard || isOpponentCard))) {
+            const isCorrectScope = targetInfo.scope === 'any' || targetInfo.scope === cardOwner;
+            const isCorrectType = cardData.type.toLowerCase() === targetInfo.type;
+            const meetsBPCondition = !targetInfo.bpOrLess || getSpiritLevelAndBP(cardData, cardOwner, gameState).bp <= targetInfo.bpOrLess;
+            
+            if (isCorrectScope && isCorrectType && meetsBPCondition) {
                 cardDiv.classList.add('can-be-targeted');
             }
         }

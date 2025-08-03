@@ -31,8 +31,8 @@ const callbacks = {
         selectCoreForPlacement(coreId, from, spiritUid, gameState);
         updateUI(gameState, callbacks);
     },
-    onUseMagic: (cardUid, timing) => {
-        initiateMagicPayment(cardUid, timing, gameState);
+    onUseMagic: (cardUid, timing, effectToUse) => {
+        initiateMagicPayment(cardUid, timing, effectToUse, gameState);
         updateUI(gameState, callbacks);
     },
     onSelectCardForDiscard: (cardUid) => {
@@ -314,7 +314,6 @@ function initializeGame() {
 phaseBtn.addEventListener('click', advancePhase);
 restartBtn.addEventListener('click', initializeGame);
 
-// ... (Button event listeners) ...
 cancelSummonBtn.addEventListener('click', () => {
     cancelSummon(gameState);
     updateUI(gameState, callbacks);
@@ -428,10 +427,11 @@ function delegateClick(event) {
         return;
     }
 
+
     if (cardEl) {
         const cardId = cardEl.id;
         const cardDataInHand = gameState.player.hand.find(c => c.uid === cardId);
-        const cardDataOnField = gameState.player.field.find(c => c.uid === cardId);
+        const cardDataOnField = gameState.player.field.find(c => c.uid === cardId) || gameState.opponent.field.find(c => c.uid === cardId);
 
         if (cardDataOnField && gameState.targetingState.isTargeting) {
             callbacks.onSpiritClick(cardDataOnField);
@@ -439,7 +439,7 @@ function delegateClick(event) {
         }
 
         if (cardDataInHand) {
-            if (gameState.discardState.isDiscarding) { // Simplified: can always select/deselect discard
+            if (gameState.discardState.isDiscarding) {
                 callbacks.onSelectCardForDiscard(cardId);
                 return;
             }
@@ -453,41 +453,67 @@ function delegateClick(event) {
                 const isMainStep = gameState.phase === 'main';
                 const isFlashTimingWithPlayerPriority = gameState.flashState.isActive && gameState.flashState.priority === 'player';
                 
-                const canUseMainEffect = cardDataInHand.effects?.some(e => e.timing === 'main');
-                const canUseFlashEffect = cardDataInHand.effects?.some(e => e.timing === 'flash');
+                const availableEffects = cardDataInHand.effects?.filter(e => 
+                    (isFlashTimingWithPlayerPriority && e.timing === 'flash') || 
+                    (isPlayerTurn && isMainStep && (e.timing === 'main' || e.timing === 'flash'))
+                );
 
-                // ### FIXED LOGIC ###
-                // Priority 1: Flash Timing Action
-                if (isFlashTimingWithPlayerPriority && canUseFlashEffect) {
-                    callbacks.onUseMagic(cardId, 'flash');
-                } 
-                // Priority 2: Player's Main Step Actions
-                else if (isPlayerTurn && isMainStep) {
-                    if (cardDataInHand.type === 'Magic') {
-                        if (canUseMainEffect && canUseFlashEffect) {
-                            // Show choice modal
-                            gameState.effectChoiceState = { isChoosing: true, card: cardDataInHand };
-                            const effectChoiceButtons = document.getElementById('effect-choice-buttons');
-                            effectChoiceButtons.innerHTML = `
-                                <button id="effect-choice-main-btn">Use Main</button>
-                                <button id="effect-choice-flash-btn">Use Flash</button>
-                            `;
-                            document.getElementById('effect-choice-main-btn').onclick = () => {
-                                gameState.effectChoiceState = { isChoosing: false, card: null };
-                                callbacks.onUseMagic(cardId, 'main');
-                            };
-                            document.getElementById('effect-choice-flash-btn').onclick = () => {
-                                gameState.effectChoiceState = { isChoosing: false, card: null };
-                                callbacks.onUseMagic(cardId, 'flash');
-                            };
-                            updateUI(gameState, callbacks);
-                        } else if (canUseMainEffect) {
-                            callbacks.onUseMagic(cardId, 'main');
-                        } else if (canUseFlashEffect) {
-                            callbacks.onUseMagic(cardId, 'flash');
-                        }
-                    } else if (cardDataInHand.type === 'Spirit' || cardDataInHand.type === 'Nexus'){
+                if (!availableEffects || availableEffects.length === 0) {
+                    if (isPlayerTurn && isMainStep && (cardDataInHand.type === 'Spirit' || cardDataInHand.type === 'Nexus')) {
                         callbacks.onInitiateSummon(cardId);
+                    }
+                    return;
+                }
+
+                const firstEffect = availableEffects[0];
+                if (firstEffect.choiceId) {
+                    const validChoices = availableEffects.filter(effect => 
+                        effect.choiceId === firstEffect.choiceId && (!effect.prerequisite || effect.prerequisite(gameState))
+                    );
+
+                    if (validChoices.length > 0) {
+                        gameState.effectChoiceState = { isChoosing: true, card: cardDataInHand };
+                        const effectChoiceButtons = document.getElementById('effect-choice-buttons');
+                        
+                        effectChoiceButtons.innerHTML = validChoices.map(effect => 
+                            `<button class="effect-choice-btn" data-effect-index="${cardDataInHand.effects.indexOf(effect)}">${effect.choiceText}</button>`
+                        ).join('');
+
+                        effectChoiceButtons.querySelectorAll('.effect-choice-btn').forEach(button => {
+                            button.onclick = () => {
+                                const effectIndex = parseInt(button.dataset.effectIndex, 10);
+                                const chosenEffect = cardDataInHand.effects[effectIndex];
+                                gameState.effectChoiceState = { isChoosing: false, card: null };
+                                callbacks.onUseMagic(cardId, chosenEffect.timing, chosenEffect);
+                            };
+                        });
+                        updateUI(gameState, callbacks);
+                    }
+                } 
+                else if (cardDataInHand.type === 'Magic') {
+                    const canUseMain = availableEffects.some(e => e.timing === 'main');
+                    const canUseFlash = availableEffects.some(e => e.timing === 'flash');
+
+                    if (isMainStep && canUseMain && canUseFlash) {
+                        gameState.effectChoiceState = { isChoosing: true, card: cardDataInHand };
+                        const effectChoiceButtons = document.getElementById('effect-choice-buttons');
+                        effectChoiceButtons.innerHTML = `
+                            <button id="effect-choice-main-btn">Use Main</button>
+                            <button id="effect-choice-flash-btn">Use Flash</button>
+                        `;
+                        document.getElementById('effect-choice-main-btn').onclick = () => {
+                            gameState.effectChoiceState = { isChoosing: false, card: null };
+                            callbacks.onUseMagic(cardId, 'main');
+                        };
+                        document.getElementById('effect-choice-flash-btn').onclick = () => {
+                            gameState.effectChoiceState = { isChoosing: false, card: null };
+                            callbacks.onUseMagic(cardId, 'flash');
+                        };
+                        updateUI(gameState, callbacks);
+                    } else if (canUseMain) {
+                        callbacks.onUseMagic(cardId, 'main');
+                    } else if (canUseFlash) {
+                        callbacks.onUseMagic(cardId, 'flash');
                     }
                 }
             }
@@ -498,9 +524,11 @@ function delegateClick(event) {
     }
 }
 
-
+// *** START FIX: เพิ่ม Event Listener ให้กับโซนของคู่ต่อสู้ ***
 playerFieldElement.addEventListener('click', delegateClick);
+opponentFieldElement.addEventListener('click', delegateClick); // เพิ่มบรรทัดนี้
 playerReserveCoreContainer.addEventListener('click', delegateClick);
 playerHandContainer.addEventListener('click', delegateClick);
+// *** END FIX ***
 
 document.addEventListener('DOMContentLoaded', initializeGame);

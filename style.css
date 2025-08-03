@@ -891,6 +891,7 @@ body {
     padding: 25px;
     width: 360px;
     border-color: #39ff14; /* สีเขียวเพื่อให้รู้ว่าต้องทำ Action */
+    pointer-events: none; /* ADD THIS LINE */
 }
 
 .targeting-modal h3 {
