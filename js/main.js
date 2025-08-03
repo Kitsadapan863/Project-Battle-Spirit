@@ -269,11 +269,9 @@ function endTurn() {
     }, 1000);
 }
 
-// *** START: แก้ไขฟังก์ชัน initializeGame ***
 function initializeGame() {
     let uniqueIdCounter = 0;
     
-    // เพิ่ม .filter(Boolean) เพื่อกรองค่าที่ผิดพลาด (เช่น จาก comma เกิน) ออกไปก่อน
     const createPlayerDeck = () => JSON.parse(JSON.stringify(playerCards))
         .filter(Boolean)
         .map(c => ({...c, uid: `card-${uniqueIdCounter++}`, cores: [], isExhausted: false, tempBuffs: [] }))
@@ -306,7 +304,7 @@ function initializeGame() {
         drawCard('player', gameState);
         drawCard('opponent', gameState);
     }
-    for (let i = 0; i < 12; i++) {
+    for (let i = 0; i < 4; i++) {
         gameState.player.reserve.push({ id: `core-plr-init-${i}` });
         gameState.opponent.reserve.push({ id: `core-opp-init-${i}` });
     }
@@ -329,7 +327,6 @@ function initializeGame() {
     gameOverModal.classList.remove('visible');
     startPlayerTurn();
 }
-// *** END: แก้ไขฟังก์ชัน initializeGame ***
 
 phaseBtn.addEventListener('click', advancePhase);
 restartBtn.addEventListener('click', initializeGame);
@@ -364,27 +361,36 @@ closeOpponentTrashViewerBtn.addEventListener('click', () => {
 closeTrashViewerBtn.addEventListener('click', () => {
     cardTrashModal.classList.remove('visible');
 });
+
+// *** START: แก้ไข Event Listener ของปุ่ม Pass ***
 passFlashBtn.addEventListener('click', () => {
     const resolutionStatus = passFlash(gameState);
     updateUI(gameState, callbacks);
+
     if (!gameState.flashState.isActive) {
-        if (resolutionStatus === 'battle_resolved') {
+        // ถ้าการต่อสู้จบลง และเป็นเทิร์นของ AI ให้ AI โจมตีต่อ
+        if (resolutionStatus === 'battle_resolved' && gameState.turn === 'opponent') {
             setTimeout(() => aiAttackStep(true), 500);
         }
         return;
     }
+
+    // จำลองการ Pass ของ AI
     if (gameState.flashState.priority === 'opponent') {
         setTimeout(() => {
             const finalResolutionStatus = passFlash(gameState);
             updateUI(gameState, callbacks);
             if (!gameState.flashState.isActive) {
-                if (finalResolutionStatus === 'battle_resolved') {
+                // ถ้าการต่อสู้จบลง และเป็นเทิร์นของ AI ให้ AI โจมตีต่อ
+                if (finalResolutionStatus === 'battle_resolved' && gameState.turn === 'opponent') {
                     setTimeout(() => aiAttackStep(true), 500);
                 }
             }
         }, 500);
     }
 });
+// *** END: แก้ไข Event Listener ของปุ่ม Pass ***
+
 cancelMagicBtn.addEventListener('click', () => {
     cancelMagicPayment(gameState);
     updateUI(gameState, callbacks);
@@ -398,7 +404,7 @@ confirmMagicBtn.addEventListener('click', () => {
                 const resolutionStatus = passFlash(gameState);
                 updateUI(gameState, callbacks);
                 if (!gameState.flashState.isActive) {
-                     if (resolutionStatus === 'battle_resolved') {
+                     if (resolutionStatus === 'battle_resolved' && gameState.turn === 'opponent') {
                          setTimeout(() => aiAttackStep(true), 500);
                     }
                 }
