@@ -2,6 +2,7 @@
 // This file will handle the logic for resolving card effects.
 
 import { getCardLevel } from './utils.js';
+import { applyPowerUpEffect } from './actions.js';
 
 function applyCrush(card, cardLevel, opponentKey, gameState) {
     console.log(`Activating [Crush] from ${card.name}`);
@@ -43,6 +44,12 @@ export function resolveTriggeredEffects(card, timing, ownerKey, gameState) {
                     case 'clash':
                         applyClash(card, opponentKey, gameState)
                         break
+                    case 'power up':
+                    // Apply to self when attacking
+                        if (timing === 'whenAttacks') {
+                           applyPowerUpEffect(card.uid, effect.power, effect.duration, gameState);
+                        }
+                        break;
                     // Future keywords like 'rampage' or 'armor' can be added here
                     // case 'rampage':
                     //     applyRampage(card, ownerKey, gameState);

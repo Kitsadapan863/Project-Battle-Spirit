@@ -1,8 +1,8 @@
 // js/main.js
 import { allCards } from './cards.js';
-import { updateUI, phaseBtn, restartBtn, cancelSummonBtn, confirmSummonBtn, confirmPlacementBtn, gameOverModal, takeDamageBtn, playerHandContainer, playerFieldElement, playerReserveCoreContainer, passFlashBtn, confirmMagicBtn, cancelMagicBtn, cardTrashModal, closeTrashViewerBtn, playerCardTrashZone, opponentCardTrashZone, opponentCardTrashModal, closeOpponentTrashViewerBtn, confirmDiscardBtn, confirmCoreRemovalBtn, cancelCoreRemovalBtn } from './ui.js';
+import { updateUI, phaseBtn, restartBtn, cancelSummonBtn, confirmSummonBtn, confirmPlacementBtn, gameOverModal, takeDamageBtn, playerHandContainer, playerFieldElement, playerReserveCoreContainer, passFlashBtn, confirmMagicBtn, cancelMagicBtn, cardTrashModal, closeTrashViewerBtn, playerCardTrashZone, opponentCardTrashZone, opponentCardTrashModal, closeOpponentTrashViewerBtn, confirmDiscardBtn, confirmCoreRemovalBtn, cancelCoreRemovalBtn, cancelEffectChoiceBtn  } from './ui.js';
 import { getSpiritLevelAndBP, getCardLevel } from './utils.js';
-import { summonSpiritAI, drawCard, calculateCost, checkGameOver, cancelSummon, confirmSummon, confirmPlacement, performRefreshStep, takeLifeDamage, declareBlock, initiateSummon, selectCoreForPlacement, selectCoreForPayment, handleSpiritClick, enterFlashTiming, passFlash, initiateMagicPayment, confirmMagicPayment, cancelMagicPayment, initiateDiscard, selectCardForDiscard, confirmDiscard, confirmCoreRemoval, cancelCoreRemoval } from './actions.js';
+import { summonSpiritAI, drawCard, calculateCost, checkGameOver, cancelSummon, confirmSummon, confirmPlacement, performRefreshStep, takeLifeDamage, declareBlock, initiateSummon, selectCoreForPlacement, selectCoreForPayment, handleSpiritClick, enterFlashTiming, passFlash, initiateMagicPayment, confirmMagicPayment, cancelMagicPayment, initiateDiscard, selectCardForDiscard, confirmDiscard, confirmCoreRemoval, cancelCoreRemoval, clearTemporaryBuffs } from './actions.js';
 import {resolveTriggeredEffects} from './effects.js'
 
 let gameState;
@@ -13,10 +13,8 @@ const callbacks = {
         updateUI(gameState, callbacks);
     },
     onSpiritClick: (cardData) => {
-        const actionResult = handleSpiritClick(cardData, gameState);
-        if (actionResult) {
-            updateUI(gameState, callbacks);
-        }
+        handleSpiritClick(cardData, gameState);
+        updateUI(gameState, callbacks);
     },
     onSelectCoreForPayment: (coreId, from, spiritUid) => {
         selectCoreForPayment(coreId, from, spiritUid, gameState);
@@ -36,8 +34,9 @@ const callbacks = {
     }
 };
 
+// ... (advancePhase, startPlayerTurn, etc. are the same) ...
 function advancePhase() {
-    if (gameState.turn !== 'player' || gameState.summoningState.isSummoning || gameState.placementState.isPlacing || gameState.attackState.isAttacking || gameState.flashState.isActive || gameState.discardState.isDiscarding) return;
+    if (gameState.turn !== 'player' || gameState.summoningState.isSummoning || gameState.placementState.isPlacing || gameState.attackState.isAttacking || gameState.flashState.isActive || gameState.discardState.isDiscarding || gameState.targetingState.isTargeting) return;
 
     if (gameState.phase === 'attack' && !gameState.attackState.isAttacking) {
         endTurn();
@@ -155,7 +154,7 @@ function runAiTurn() {
     }, 2000);
 }
 
-// *** FIXED: Corrected the order of operations for Clash effect ***
+
 function aiAttackStep(isNewAttackDeclaration) {
     if (gameState.gameover) return;
     gameState.phase = 'attack';
@@ -168,13 +167,10 @@ function aiAttackStep(isNewAttackDeclaration) {
             
             attacker.isExhausted = true;
             
-            // First, set up the attack state, including resetting clash
             gameState.attackState = { isAttacking: true, attackerUid: attacker.uid, defender: 'player', blockerUid: null, isClash: false };
             
-            // Then, resolve effects which might change the attack state (e.g., set isClash to true)
             resolveTriggeredEffects(attacker, 'whenAttacks', 'opponent', gameState);
 
-            // Finally, proceed to the next game step
             enterFlashTiming(gameState, 'beforeBlock');
             updateUI(gameState, callbacks);
         } else {
@@ -189,6 +185,7 @@ function aiAttackStep(isNewAttackDeclaration) {
 function endAiTurn() {
     if (gameState.gameover) return;
     gameState.phase = 'end';
+    clearTemporaryBuffs('opponent', gameState); // Clear opponent's buffs
     updateUI(gameState, callbacks);
     setTimeout(() => {
         gameState.turn = 'player';
@@ -199,6 +196,7 @@ function endAiTurn() {
 
 function endTurn() {
     gameState.phase = 'end';
+    clearTemporaryBuffs('player', gameState); // Clear player's buffs
     updateUI(gameState, callbacks);
     setTimeout(() => {
         gameState.turn = 'opponent';
@@ -210,7 +208,7 @@ function endTurn() {
 
 function initializeGame() {
     let uniqueIdCounter = 0;
-    const createDeck = () => JSON.parse(JSON.stringify(allCards)).map(c => ({...c, uid: `card-${uniqueIdCounter++}`, cores: [], isExhausted: false })).sort(() => Math.random() - 0.5);
+    const createDeck = () => JSON.parse(JSON.stringify(allCards)).map(c => ({...c, uid: `card-${uniqueIdCounter++}`, cores: [], isExhausted: false, tempBuffs: [] })).sort(() => Math.random() - 0.5);
     gameState = {
         turn: 'player', gameTurn: 1, gameover: false, phase: 'start',
         summoningState: { isSummoning: false, cardToSummon: null, costToPay: 0, selectedCores: [] },
@@ -220,6 +218,8 @@ function initializeGame() {
         magicPaymentState: { isPaying: false, cardToUse: null, costToPay: 0, selectedCores: [], timing: null },
         discardState: { isDiscarding: false, count: 0, cardToDiscard: null },
         coreRemovalConfirmationState: { isConfirming: false, coreId: null, from: null, sourceUid: null },
+        targetingState: { isTargeting: false, forEffect: null, onTarget: null },
+        effectChoiceState: { isChoosing: false, card: null }, // Add effect choice state
         player: { life: 5, deck: createDeck(), hand: [], field: [], reserve: [], costTrash: [], cardTrash: [] },
         opponent: { life: 5, deck: createDeck(), hand: [], field: [], reserve: [], costTrash: [], cardTrash: [] }
     };
@@ -235,7 +235,7 @@ function initializeGame() {
     startPlayerTurn();
 }
 
-// --- Event Listeners ---
+// ... (Event Listeners) ...
 phaseBtn.addEventListener('click', advancePhase);
 restartBtn.addEventListener('click', initializeGame);
 
@@ -339,6 +339,12 @@ cancelCoreRemovalBtn.addEventListener('click', () => {
     updateUI(gameState, callbacks);
 });
 
+
+cancelEffectChoiceBtn.addEventListener('click', () => {
+    gameState.effectChoiceState = { isChoosing: false, card: null };
+    updateUI(gameState, callbacks);
+});
+
 function delegateClick(event) {
     const cardEl = event.target.closest('.card');
     const coreEl = event.target.closest('.core');
@@ -363,6 +369,11 @@ function delegateClick(event) {
         const cardDataInHand = gameState.player.hand.find(c => c.uid === cardId);
         const cardDataOnField = gameState.player.field.find(c => c.uid === cardId);
 
+        if (cardDataOnField && gameState.targetingState.isTargeting) {
+            callbacks.onSpiritClick(cardDataOnField);
+            return;
+        }
+
         if (cardDataInHand) {
             if (gameState.discardState.isDiscarding && gameState.turn === 'player') {
                 callbacks.onSelectCardForDiscard(cardId);
@@ -377,13 +388,31 @@ function delegateClick(event) {
                 const isMainStep = gameState.phase === 'main';
                 const isFlashTiming = gameState.flashState.isActive && gameState.flashState.priority === 'player';
                 
-                const canUseFlashEffect = cardDataInHand.effects?.some(e => e.timing === 'flash');
                 const canUseMainEffect = cardDataInHand.effects?.some(e => e.timing === 'main');
+                const canUseFlashEffect = cardDataInHand.effects?.some(e => e.timing === 'flash');
 
                 if (isFlashTiming && canUseFlashEffect) {
                     callbacks.onUseMagic(cardId, 'flash');
                 } else if (isMainStep && cardDataInHand.type === 'Magic') {
-                    if (canUseMainEffect) {
+                    
+                    // FIXED LOGIC: Handle choice between Main and Flash
+                    if (canUseMainEffect && canUseFlashEffect) {
+                        gameState.effectChoiceState = { isChoosing: true, card: cardDataInHand };
+                        const effectChoiceButtons = document.getElementById('effect-choice-buttons');
+                        effectChoiceButtons.innerHTML = `
+                            <button id="effect-choice-main-btn">Use Main</button>
+                            <button id="effect-choice-flash-btn">Use Flash</button>
+                        `;
+                        document.getElementById('effect-choice-main-btn').onclick = () => {
+                            gameState.effectChoiceState = { isChoosing: false, card: null };
+                            callbacks.onUseMagic(cardId, 'main');
+                        };
+                        document.getElementById('effect-choice-flash-btn').onclick = () => {
+                            gameState.effectChoiceState = { isChoosing: false, card: null };
+                            callbacks.onUseMagic(cardId, 'flash');
+                        };
+                        updateUI(gameState, callbacks);
+                    } else if (canUseMainEffect) {
                         callbacks.onUseMagic(cardId, 'main');
                     } else if (canUseFlashEffect) {
                         callbacks.onUseMagic(cardId, 'flash');

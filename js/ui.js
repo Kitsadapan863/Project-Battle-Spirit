@@ -58,10 +58,14 @@ export const discardOverlay = document.getElementById('discard-overlay');
 export const discardTitle = document.getElementById('discard-title');
 export const discardPrompt = document.getElementById('discard-prompt');
 export const confirmDiscardBtn = document.getElementById('confirm-discard-btn');
-// NEW: Core Removal Confirmation Modal Elements
 export const coreRemovalConfirmationOverlay = document.getElementById('core-removal-confirmation-overlay');
 export const confirmCoreRemovalBtn = document.getElementById('confirm-core-removal-btn');
 export const cancelCoreRemovalBtn = document.getElementById('cancel-core-removal-btn');
+// NEW: Effect Choice Modal Elements
+export const effectChoiceModal = document.getElementById('effect-choice-modal');
+export const effectChoiceTitle = document.getElementById('effect-choice-title');
+export const effectChoiceButtons = document.getElementById('effect-choice-buttons');
+export const cancelEffectChoiceBtn = document.getElementById('cancel-effect-choice-btn');
 
 
 function createCardElement(cardData, location, owner, gameState, callbacks) {
@@ -100,10 +104,11 @@ function createCardElement(cardData, location, owner, gameState, callbacks) {
                 <div class="card-core-display"></div>
             `;
         } else { 
-            const { level, bp } = getSpiritLevelAndBP(cardData, owner, gameState);
+            const { level, bp, isBuffed } = getSpiritLevelAndBP(cardData, owner, gameState);
+            const bpClass = isBuffed ? 'bp-buffed' : ''; // Check for buff and set class
             cardDiv.innerHTML += `
                 <div class="card-info">
-                    <p>Lv${level} BP: ${bp}</p>
+                    <p class="${bpClass}">Lv${level} BP: ${bp}</p>
                 </div>
                 <div class="card-core-display"></div>
             `;
@@ -170,7 +175,7 @@ function createCoreElement(coreData, locationInfo, gameState, callbacks) {
 
 export function updateUI(gameState, callbacks) {
     if (!gameState) return;
-    const { summoningState, placementState, attackState, flashState, magicPaymentState, discardState } = gameState;
+    const { summoningState, placementState, attackState, flashState, magicPaymentState, discardState,effectChoiceState  } = gameState;
 
     if (summoningState.isSummoning) {
         summonPaymentOverlay.classList.add('visible');
@@ -206,6 +211,7 @@ export function updateUI(gameState, callbacks) {
         defenseOverlay.classList.add('visible');
         const attacker = gameState.opponent.field.find(s => s.uid === attackState.attackerUid);
         if (attacker) {
+            // แก้ไขบรรทัดนี้เพื่อรับค่า BP ให้ถูกต้อง
             const { bp } = getSpiritLevelAndBP(attacker, 'opponent', gameState);
             defenseAttackerInfo.textContent = `Attacker: ${attacker.name} (BP: ${bp})`;
         }
@@ -242,6 +248,14 @@ export function updateUI(gameState, callbacks) {
         coreRemovalConfirmationOverlay.classList.add('visible');
     } else {
         coreRemovalConfirmationOverlay.classList.remove('visible');
+    }
+
+    // NEW: Effect Choice Modal Visibility
+    if (effectChoiceState && effectChoiceState.isChoosing) {
+        effectChoiceModal.classList.add('visible');
+        effectChoiceTitle.textContent = `Choose Effect: ${effectChoiceState.card.name}`;
+    } else {
+        effectChoiceModal.classList.remove('visible');
     }
 
     if (gameState.gameover) {

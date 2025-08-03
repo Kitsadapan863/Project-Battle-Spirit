@@ -1,6 +1,6 @@
 // js/utils.js
 
-// A generic function to get the level of any card with cores
+// ... (getCardLevel function is the same) ...
 export function getCardLevel(card) {
     if (!card || !card.cores || !card.level) return { level: 0 };
     const currentCores = card.cores.length;
@@ -20,33 +20,43 @@ export function getCardLevel(card) {
 }
 
 
-// FIXED: Function now accepts gameState to check for global effects like Nexus buffs
+// FIXED: Function now includes temporary BP buffs in calculation
 export function getSpiritLevelAndBP(spiritCard, ownerKey, gameState) {
-    if (!spiritCard || !spiritCard.cores || !spiritCard.level) return { level: 0, bp: 0 };
+    if (!spiritCard || !spiritCard.cores || !spiritCard.level) return { level: 0, bp: 0, isBuffed: false };
     
     const { level } = getCardLevel(spiritCard);
     let currentBP = 0;
+    let isBuffed = false;
 
     if (level > 0 && spiritCard.level[`level-${level}`]) {
         currentBP = spiritCard.level[`level-${level}`].bp || 0;
     }
     
-    // --- START: Apply Nexus Effects ---
+    // Apply permanent Nexus effects
     if (gameState && ownerKey) {
         const owner = gameState[ownerKey];
-        // Check for "The Burning Canyon" effect
         if (gameState.turn === ownerKey && gameState.phase === 'attack') {
             owner.field.forEach(card => {
                 if (card.id === 'nexus-burning-canyon') {
                     const nexusLevel = getCardLevel(card).level;
                     if (nexusLevel >= 2) {
-                        currentBP += 1000; // Add 1000 BP
+                        currentBP += 1000;
+                        isBuffed = true;
                     }
                 }
             });
         }
     }
-    // --- END: Apply Nexus Effects ---
     
-    return { level: level, bp: currentBP };
+    // Apply temporary buffs from Magic, etc.
+    if (spiritCard.tempBuffs && spiritCard.tempBuffs.length > 0) {
+        spiritCard.tempBuffs.forEach(buff => {
+            if (buff.type === 'BP') {
+                currentBP += buff.value;
+                isBuffed = true;
+            }
+        });
+    }
+    
+    return { level: level, bp: currentBP, isBuffed: isBuffed };
 }

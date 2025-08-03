@@ -58,6 +58,20 @@ export const allCards = [
         symbol: {"red":1},
     },
     {
+        id: 'card-scout-dragno',
+        name: 'The Scout Dragno',
+        image: '../images/The Scout Dragno.webp',
+        cost: 2,
+        symbol_cost:{"red":1},
+        level:{ "level-1":{ "core": 1, "bp": 2000 }, "level-2":{ "core": 2, "bp": 3000 }},
+        type: 'Spirit', color: 'red',
+        family: ["Dragon"], 
+        effects: [
+            { level: [1, 2], timing: 'whenAttacks',keyword:'power up',power:2000,duration: 'battle', description: "[LV1][LV2]\n(When Attacks)\nThis spirit gets + 2000BP until end of turn." }
+        ],
+        symbol: {"red":1},
+    },
+    {
         id: 'card-strike-siegwurm',
         name: 'The Moonlight Dragon Strike Siegwurm',
         image: '../images/The_Moonlight_Dragon_Strike_Siegwurm.webp',
@@ -137,6 +151,19 @@ export const allCards = [
         effects: [
             { timing: 'main', description: 'Draw 2 cards from your deck.' },
             { timing: 'flash', description: 'During this battle, 1 of your Spirits gets +2000 BP.' }
+        ],
+    },
+    {
+        id: 'magic-double-draw',
+        name: 'Double Draw',
+        image: '../images/Double Draw.webp',
+        cost: 4,
+        symbol_cost:{"red":2},
+        type: 'Magic',
+        color: 'red',
+        effects: [
+            { timing: 'main', keyword:'draw', quantity:2, description: '[Main]\nDraw 2 cards from your deck.' },
+            { timing: 'flash', keyword:'power up',power: 2000,duration: 'turn', description: '[Flash]\nDuring this turn, 1 Spirits gets +2000 BP.' }
         ],
     },
     {
