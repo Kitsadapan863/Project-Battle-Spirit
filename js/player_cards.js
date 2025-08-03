@@ -434,6 +434,52 @@ export const playerCards = [
                description: '[Flash]\nDuring this turn, 1 Spirits gets +3000 BP.' }
         ],
     },
+    //	Magic Hammer
+    {
+        id: 'magic-hammer',
+        name: 'Magic Hammer',
+        image: '../images/Magic Hammer.webp',
+        cost: 4,
+        symbol_cost:{"blue":2},
+        type: 'Magic',
+        color: 'blue',
+        effects: [
+            { timing: 'main', keyword:'discard', quantity:5, description: "[Main]\nMove the top 5 cards of your opponent's Deck to their Trash." },
+            { timing: 'flash', keyword:'power up',power: 3000,duration: 'turn', 
+              target: { scope: 'any', type: 'spirit', count: 1 },
+               description: '[Flash]\nDuring this turn, 1 Spirits gets +3000 BP.' }
+        ],
+    },
+        {
+        id: 'magic-hammer',
+        name: 'Magic Hammer',
+        image: '../images/Magic Hammer.webp',
+        cost: 4,
+        symbol_cost:{"blue":2},
+        type: 'Magic',
+        color: 'blue',
+        effects: [
+            { timing: 'main', keyword:'discard', quantity:5, description: "[Main]\nMove the top 5 cards of your opponent's Deck to their Trash." },
+            { timing: 'flash', keyword:'power up',power: 3000,duration: 'turn', 
+              target: { scope: 'any', type: 'spirit', count: 1 },
+               description: '[Flash]\nDuring this turn, 1 Spirits gets +3000 BP.' }
+        ],
+    },
+        {
+        id: 'magic-hammer',
+        name: 'Magic Hammer',
+        image: '../images/Magic Hammer.webp',
+        cost: 4,
+        symbol_cost:{"blue":2},
+        type: 'Magic',
+        color: 'blue',
+        effects: [
+            { timing: 'main', keyword:'discard', quantity:5, description: "[Main]\nMove the top 5 cards of your opponent's Deck to their Trash." },
+            { timing: 'flash', keyword:'power up',power: 3000,duration: 'turn', 
+              target: { scope: 'any', type: 'spirit', count: 1 },
+               description: '[Flash]\nDuring this turn, 1 Spirits gets +3000 BP.' }
+        ],
+    },
     //The Burning Canyon
     {
         id: 'nexus-burning-canyon',
