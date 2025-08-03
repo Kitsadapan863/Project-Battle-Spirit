@@ -137,8 +137,55 @@ export const playerCards = [
     ],
     symbol: {"blue":1},
 },
-
-
+// Steam-Golem
+{
+    id: 'card-steam-golem',
+    name: 'Steam-Golem',
+    image: '../images/Steam-Golem.webp', 
+    cost: 5,
+    symbol_cost:{"blue":3},
+    level:{ "level-1":{ "core": 1, "bp": 4000 }, "level-2":{ "core": 4, "bp": 5000 }, "level-3":{ "core": 5, "bp": 6000 } },
+    type: 'Spirit', color: 'blue',
+    family: ["Fighting Spirit", "Soldier"], 
+    effects: [
+        { level: [1, 2, 3], timing: 'whenAttacks',keyword: 'crush', description: "[LV1][LV2][LV3] [Crush]\n(When Attacks)\nMove cards from the top of your opponent's Deck to their trash equal to this spirit's LV." },
+        { level: [2],timing:'permanent',keyword:'add crush', count:1, description: "[LV2]\n(Permanent,)\nEach time 1 or more cards are moved from the top of your opponent's Deck to their Trash due to the effects of this spirit's Crush, increase that number by 1." },
+        { level: [3],timing:'permanent',keyword:'add crush', count:2, description: "[LV2]\n(Permanent,)\nEach time 1 or more cards are moved from the top of your opponent's Deck to their Trash due to the effects of this spirit's Crush, increase that number by 2." }     
+    ],
+    symbol: {"blue":1},
+},
+{
+    id: 'card-steam-golem',
+    name: 'Steam-Golem',
+    image: '../images/Steam-Golem.webp', 
+    cost: 5,
+    symbol_cost:{"blue":3},
+    level:{ "level-1":{ "core": 1, "bp": 4000 }, "level-2":{ "core": 4, "bp": 5000 }, "level-3":{ "core": 5, "bp": 6000 } },
+    type: 'Spirit', color: 'blue',
+    family: ["Fighting Spirit", "Soldier"], 
+    effects: [
+        { level: [1, 2, 3], timing: 'whenAttacks',keyword: 'crush', description: "[LV1][LV2][LV3] [Crush]\n(When Attacks)\nMove cards from the top of your opponent's Deck to their trash equal to this spirit's LV." },
+        { level: [2],timing:'permanent',keyword:'add crush', count:1, description: "[LV2]\n(Permanent,)\nEach time 1 or more cards are moved from the top of your opponent's Deck to their Trash due to the effects of this spirit's Crush, increase that number by 1." },
+        { level: [3],timing:'permanent',keyword:'add crush', count:2, description: "[LV2]\n(Permanent,)\nEach time 1 or more cards are moved from the top of your opponent's Deck to their Trash due to the effects of this spirit's Crush, increase that number by 2." }     
+    ],
+    symbol: {"blue":1},
+},
+{
+    id: 'card-steam-golem',
+    name: 'Steam-Golem',
+    image: '../images/Steam-Golem.webp', 
+    cost: 5,
+    symbol_cost:{"blue":3},
+    level:{ "level-1":{ "core": 1, "bp": 4000 }, "level-2":{ "core": 4, "bp": 5000 }, "level-3":{ "core": 5, "bp": 6000 } },
+    type: 'Spirit', color: 'blue',
+    family: ["Fighting Spirit", "Soldier"], 
+    effects: [
+        { level: [1, 2, 3], timing: 'whenAttacks',keyword: 'crush', description: "[LV1][LV2][LV3] [Crush]\n(When Attacks)\nMove cards from the top of your opponent's Deck to their trash equal to this spirit's LV." },
+        { level: [2],timing:'permanent',keyword:'add crush', count:1, description: "[LV2]\n(Permanent,)\nEach time 1 or more cards are moved from the top of your opponent's Deck to their Trash due to the effects of this spirit's Crush, increase that number by 1." },
+        { level: [3],timing:'permanent',keyword:'add crush', count:2, description: "[LV2]\n(Permanent,)\nEach time 1 or more cards are moved from the top of your opponent's Deck to their Trash due to the effects of this spirit's Crush, increase that number by 2." }     
+    ],
+    symbol: {"blue":1},
+},
     //The Burning Canyon
     {
         id: 'nexus-burning-canyon',
