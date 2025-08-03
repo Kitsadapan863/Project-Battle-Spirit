@@ -1,5 +1,5 @@
 // js/main.js
-import { allCards } from './cards.js';
+import { playerCards, opponentCards } from './cards.js';
 import { 
     updateUI, phaseBtn, restartBtn, cancelSummonBtn, confirmSummonBtn, confirmPlacementBtn, gameOverModal, takeDamageBtn, 
     playerHandContainer, playerFieldElement, playerReserveCoreContainer, passFlashBtn, confirmMagicBtn, cancelMagicBtn, 
@@ -219,7 +219,8 @@ function aiAttackStep(isNewAttackDeclaration) {
     
     if (isNewAttackDeclaration) {
         const attackers = gameState.opponent.field.filter(s => s.type === 'Spirit' && !s.isExhausted);
-        if (attackers.length > 0) {
+        
+        if (attackers.length > 1) { 
             attackers.sort((a, b) => getSpiritLevelAndBP(b, 'opponent', gameState).bp - getSpiritLevelAndBP(a, 'opponent', gameState).bp);
             const attacker = attackers[0];
             
@@ -257,37 +258,55 @@ function endTurn() {
     gameState.phase = 'end';
     clearTemporaryBuffs('player', gameState);
     clearTemporaryBuffs('opponent', gameState);
+    
+    gameState.turn = 'opponent';
+    gameState.gameTurn++;
+    
     updateUI(gameState, callbacks);
+    
     setTimeout(() => {
-        gameState.turn = 'opponent';
-        gameState.gameTurn++;
-        updateUI(gameState, callbacks);
-        setTimeout(runAiTurn, 500);
-    }, 500);
+        runAiTurn();
+    }, 1000);
 }
 
+// *** START: แก้ไขฟังก์ชัน initializeGame ***
 function initializeGame() {
     let uniqueIdCounter = 0;
-    const createDeck = () => JSON.parse(JSON.stringify(allCards)).map(c => ({...c, uid: `card-${uniqueIdCounter++}`, cores: [], isExhausted: false, tempBuffs: [] })).sort(() => Math.random() - 0.5);
+    
+    // เพิ่ม .filter(Boolean) เพื่อกรองค่าที่ผิดพลาด (เช่น จาก comma เกิน) ออกไปก่อน
+    const createPlayerDeck = () => JSON.parse(JSON.stringify(playerCards))
+        .filter(Boolean)
+        .map(c => ({...c, uid: `card-${uniqueIdCounter++}`, cores: [], isExhausted: false, tempBuffs: [] }))
+        .sort(() => Math.random() - 0.5);
+        
+    const createOpponentDeck = () => JSON.parse(JSON.stringify(opponentCards))
+        .filter(Boolean)
+        .map(c => ({...c, uid: `card-${uniqueIdCounter++}`, cores: [], isExhausted: false, tempBuffs: [] }))
+        .sort(() => Math.random() - 0.5);
+    
     gameState = {
-        turn: 'player', gameTurn: 1, gameover: false, phase: 'start',
+        turn: 'player', 
+        gameTurn: 1, 
+        gameover: false, 
+        phase: 'start',
         summoningState: { isSummoning: false, cardToSummon: null, costToPay: 0, selectedCores: [] },
         placementState: { isPlacing: false, targetSpiritUid: null },
-        attackState: { isAttacking: false, attackerUid: null, defender: null, blockerUid: null },
+        attackState: { isAttacking: false, attackerUid: null, defender: null, blockerUid: null, isClash: false },
         flashState: { isActive: false, timing: null, priority: 'player', hasPassed: { player: false, opponent: false } },
-        magicPaymentState: { isPaying: false, cardToUse: null, costToPay: 0, selectedCores: [], timing: null },
+        magicPaymentState: { isPaying: false, cardToUse: null, costToPay: 0, selectedCores: [], timing: null, effectToUse: null },
         discardState: { isDiscarding: false, count: 0, cardToDiscard: null },
         coreRemovalConfirmationState: { isConfirming: false, coreId: null, from: null, sourceUid: null },
         targetingState: { isTargeting: false, forEffect: null, onTarget: null },
         effectChoiceState: { isChoosing: false, card: null },
-        player: { life: 5, deck: createDeck(), hand: [], field: [], reserve: [], costTrash: [], cardTrash: [] },
-        opponent: { life: 5, deck: createDeck(), hand: [], field: [], reserve: [], costTrash: [], cardTrash: [] }
+        player: { life: 5, deck: createPlayerDeck(), hand: [], field: [], reserve: [], costTrash: [], cardTrash: [] },
+        opponent: { life: 5, deck: createOpponentDeck(), hand: [], field: [], reserve: [], costTrash: [], cardTrash: [] }
     };
+
     for (let i = 0; i < 4; i++) {
         drawCard('player', gameState);
         drawCard('opponent', gameState);
     }
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < 12; i++) {
         gameState.player.reserve.push({ id: `core-plr-init-${i}` });
         gameState.opponent.reserve.push({ id: `core-opp-init-${i}` });
     }
@@ -310,6 +329,7 @@ function initializeGame() {
     gameOverModal.classList.remove('visible');
     startPlayerTurn();
 }
+// *** END: แก้ไขฟังก์ชัน initializeGame ***
 
 phaseBtn.addEventListener('click', advancePhase);
 restartBtn.addEventListener('click', initializeGame);
@@ -433,7 +453,7 @@ function delegateClick(event) {
         const cardDataInHand = gameState.player.hand.find(c => c.uid === cardId);
         const cardDataOnField = gameState.player.field.find(c => c.uid === cardId) || gameState.opponent.field.find(c => c.uid === cardId);
 
-        if (cardDataOnField && gameState.targetingState.isTargeting) {
+        if (cardDataOnField) {
             callbacks.onSpiritClick(cardDataOnField);
             return;
         }
@@ -524,11 +544,9 @@ function delegateClick(event) {
     }
 }
 
-// *** START FIX: เพิ่ม Event Listener ให้กับโซนของคู่ต่อสู้ ***
 playerFieldElement.addEventListener('click', delegateClick);
-opponentFieldElement.addEventListener('click', delegateClick); // เพิ่มบรรทัดนี้
+opponentFieldElement.addEventListener('click', delegateClick); 
 playerReserveCoreContainer.addEventListener('click', delegateClick);
 playerHandContainer.addEventListener('click', delegateClick);
-// *** END FIX ***
 
 document.addEventListener('DOMContentLoaded', initializeGame);

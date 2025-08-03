@@ -89,11 +89,10 @@ function findValidTargets(targetInfo, gameState) {
 
     return potentialTargets.filter(card => {
         const cardOwnerKey = gameState.player.field.some(c => c.uid === card.uid) ? 'player' : 'opponent';
-        // This check is important for effects that can target 'any' spirit
         const correctOwner = targetInfo.scope === 'any' || targetInfo.scope === cardOwnerKey;
         
         return correctOwner && 
-               card.type.toLowerCase() === 'spirit' && // Ensure we only target spirits for BP buffs
+               card.type.toLowerCase() === 'spirit' && 
                (!targetInfo.bpOrLess || getSpiritLevelAndBP(card, cardOwnerKey, gameState).bp <= targetInfo.bpOrLess)
     });
 }
@@ -355,6 +354,7 @@ export function confirmSummon(gameState) {
     summonedCard.cores = [];
     summonedCard.tempBuffs = [];
     gameState.player.field.push(summonedCard);
+    
     gameState.summoningState = { isSummoning: false, cardToSummon: null, costToPay: 0, selectedCores: [] };
     gameState.placementState = { isPlacing: true, targetSpiritUid: summonedCard.uid };
     return true;
@@ -398,39 +398,56 @@ export function selectCoreForPlacement(coreId, from, sourceUid, gameState) {
 export function confirmPlacement(gameState) {
     if (!gameState.placementState.isPlacing) return;
     const targetCard = gameState.player.field.find(c => c.uid === gameState.placementState.targetSpiritUid);
+    
     if (targetCard && targetCard.type === 'Spirit' && targetCard.cores.length === 0) {
-        return;
+        return; 
     }
+
+    if (targetCard) {
+        resolveTriggeredEffects(targetCard, 'whenSummoned', 'player', gameState);
+    }
+    
     cleanupField(gameState);
     gameState.placementState = { isPlacing: false, targetSpiritUid: null };
 }
 
+// *** START: แก้ไขฟังก์ชัน resolveBattle ***
 function resolveBattle(gameState) {
     const { attackerUid, blockerUid } = gameState.attackState;
     const attackerOwner = gameState.player.field.some(s => s.uid === attackerUid) ? 'player' : 'opponent';
     const blockerOwner = gameState.player.field.some(s => s.uid === blockerUid) ? 'player' : 'opponent';
     const attacker = gameState[attackerOwner].field.find(s => s.uid === attackerUid);
     const blocker = gameState[blockerOwner].field.find(s => s.uid === blockerUid);
+
     if (!attacker || !blocker) {
         if (attacker) clearBattleBuffs(attackerOwner, gameState);
         if (blocker) clearBattleBuffs(blockerOwner, gameState);
         gameState.attackState = { isAttacking: false, attackerUid: null, defender: null, blockerUid: null };
         return;
     }
+
     const attackerResult = getSpiritLevelAndBP(attacker, attackerOwner, gameState);
     const blockerResult = getSpiritLevelAndBP(blocker, blockerOwner, gameState);
+
     if (attackerResult.bp > blockerResult.bp) {
+        // เมื่อผู้โจมตีชนะ ให้เรียกใช้เอฟเฟกต์
+        resolveTriggeredEffects(attacker, 'onOpponentDestroyedInBattle', attackerOwner, gameState);
         destroyCard(blockerUid, blockerOwner, gameState);
     } else if (blockerResult.bp > attackerResult.bp) {
+        // เมื่อผู้ป้องกันชนะ เอฟเฟกต์ของ Titus จะไม่ทำงาน
         destroyCard(attackerUid, attackerOwner, gameState);
     } else {
+        // กรณี BP เท่ากัน ทำลายทั้งคู่
         destroyCard(attackerUid, attackerOwner, gameState);
         destroyCard(blockerUid, blockerOwner, gameState);
     }
+    
     clearBattleBuffs(attackerOwner, gameState);
     clearBattleBuffs(blockerOwner, gameState);
     gameState.attackState = { isAttacking: false, attackerUid: null, defender: null, blockerUid: null };
 }
+// *** END: แก้ไขฟังก์ชัน resolveBattle ***
+
 
 export function declareBlock(blockerUid, gameState) {
     if (!gameState.attackState.isAttacking) return;
@@ -569,7 +586,6 @@ export function confirmMagicPayment(gameState) {
                 moveUsedMagicToTrash(cardToUse.uid, gameState);
                 break;
             
-            // *** START FIX: เพิ่ม case 'power up' ***
             case 'power up':
                 const validPowerUpTargets = findValidTargets(effectToUse.target, gameState);
                 if (validPowerUpTargets.length > 0) {
@@ -582,7 +598,6 @@ export function confirmMagicPayment(gameState) {
                     fizzleMagic(cardToUse.uid, gameState);
                 }
                 break;
-            // *** END FIX ***
 
             case 'destroy':
                 const validDestroyTargets = findValidTargets(effectToUse.target, gameState);
