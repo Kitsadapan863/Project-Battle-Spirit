@@ -885,3 +885,21 @@ body {
 .card-effects-text strong {
     color: #ffc107; /* สีทองสำหรับ Timing เช่น [Main] [Flash] */
 }
+
+/* Styles for the new Targeting Overlay */
+.targeting-modal {
+    padding: 25px;
+    width: 360px;
+    border-color: #39ff14; /* สีเขียวเพื่อให้รู้ว่าต้องทำ Action */
+}
+
+.targeting-modal h3 {
+    color: #39ff14;
+}
+
+/* Style for cards that can be targeted */
+.card.can-be-targeted {
+    border-color: #39ff14;
+    box-shadow: 0 0 20px #39ff14;
+    animation: pulse-green 1.5s infinite;
+}

@@ -66,7 +66,10 @@ export const effectChoiceModal = document.getElementById('effect-choice-modal');
 export const effectChoiceTitle = document.getElementById('effect-choice-title');
 export const effectChoiceButtons = document.getElementById('effect-choice-buttons');
 export const cancelEffectChoiceBtn = document.getElementById('cancel-effect-choice-btn');
-
+// NEW: Targeting Overlay Elements
+export const targetingOverlay = document.getElementById('targeting-overlay');
+export const targetingTitle = document.getElementById('targeting-title');
+export const targetingPrompt = document.getElementById('targeting-prompt');
 
 function createCardElement(cardData, location, owner, gameState, callbacks) {
     const cardDiv = document.createElement('div');
@@ -126,6 +129,11 @@ function createCardElement(cardData, location, owner, gameState, callbacks) {
         if (owner === 'player' && cardData.type === 'Spirit' && gameState.attackState.isAttacking && gameState.attackState.defender === 'player' && !cardData.isExhausted && !gameState.flashState.isActive) {
              cardDiv.classList.add('can-block');
         }
+
+        // NEW: Add targeting highlight
+        if (gameState.targetingState.isTargeting && cardData.type === 'Spirit') {
+            cardDiv.classList.add('can-be-targeted');
+        }
     }
     return cardDiv;
 }
@@ -175,7 +183,7 @@ function createCoreElement(coreData, locationInfo, gameState, callbacks) {
 
 export function updateUI(gameState, callbacks) {
     if (!gameState) return;
-    const { summoningState, placementState, attackState, flashState, magicPaymentState, discardState,effectChoiceState  } = gameState;
+    const { summoningState, placementState, attackState, flashState, magicPaymentState, discardState, effectChoiceState, targetingState } = gameState;
 
     if (summoningState.isSummoning) {
         summonPaymentOverlay.classList.add('visible');
@@ -228,11 +236,19 @@ export function updateUI(gameState, callbacks) {
         defenseOverlay.classList.remove('visible');
     }
 
-    if (flashState.isActive && !magicPaymentState.isPaying) {
+    // MODIFIED: Flash overlay should hide when targeting
+    if (flashState.isActive && !magicPaymentState.isPaying && !targetingState.isTargeting) {
         flashOverlay.classList.add('visible');
         flashTitle.textContent = `Flash Timing (${flashState.priority}'s Priority)`;
     } else {
         flashOverlay.classList.remove('visible');
+    }
+
+    // NEW: Show targeting overlay when active
+    if (targetingState.isTargeting) {
+        targetingOverlay.classList.add('visible');
+    } else {
+        targetingOverlay.classList.remove('visible');
     }
 
     if (discardState.isDiscarding) {

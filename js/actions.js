@@ -166,13 +166,17 @@ export function clearTemporaryBuffs(playerKey, gameState) {
 
 // ... (handleSpiritClick, drawCard, moveCore, initiateSummon, etc. are mostly the same) ...
 export function handleSpiritClick(cardData, gameState) {
+    // MODIFIED: When a target is clicked, update targetingState and return true
     if (gameState.targetingState.isTargeting) {
         if (cardData.type === 'Spirit') {
             gameState.targetingState.onTarget(cardData.uid);
+            // Reset targeting state
             gameState.targetingState = { isTargeting: false, forEffect: null, onTarget: null };
+            return true; // Return true to signal a state change that needs a UI update
         }
-        return;
+        return false;
     }
+    
     if (cardData.type !== 'Spirit') return false;
 
     if (gameState.turn === 'player' && gameState.phase === 'attack' && !cardData.isExhausted && !gameState.attackState.isAttacking && gameState.gameTurn > 1) {
@@ -497,6 +501,36 @@ export function resolveFlashWindow(gameState) {
 }
 
 
+export function initiateMagicPayment(cardUid, timing, gameState) {
+    const cardToUse = gameState.player.hand.find(c => c.uid === cardUid);
+    if (!cardToUse) return;
+
+    const isFlashTiming = gameState.flashState.isActive && gameState.flashState.priority === 'player';
+    const isMainStep = gameState.phase === 'main';
+
+    const effect = cardToUse.effects.find(e => e.timing === timing);
+    if (!effect) return;
+
+    if (timing === 'flash' && !isFlashTiming && !isMainStep) return;
+    if (timing === 'main' && !isMainStep) return;
+
+    const finalCost = calculateCost(cardToUse, 'player', gameState);
+    const totalAvailableCores = gameState.player.reserve.length + gameState.player.field.reduce((sum, card) => sum + (card.cores ? card.cores.length : 0), 0);
+
+    if (totalAvailableCores < finalCost) {
+        console.log("Not enough available cores to use magic.");
+        return;
+    }
+
+    gameState.magicPaymentState = {
+        isPaying: true,
+        cardToUse: cardToUse,
+        costToPay: finalCost,
+        selectedCores: [],
+        timing: timing
+    };
+}
+
 export function confirmMagicPayment(gameState) {
     const { isPaying, cardToUse, costToPay, selectedCores, timing } = gameState.magicPaymentState;
     if (!isPaying || selectedCores.length < costToPay) return false;
@@ -525,25 +559,36 @@ export function confirmMagicPayment(gameState) {
     if (effect) {
         switch (effect.keyword) {
             case 'power up':
-                gameState.targetingState = {
-                    isTargeting: true,
-                    forEffect: effect,
-                    onTarget: (targetUid) => {
-                        applyPowerUpEffect(targetUid, effect.power, effect.duration, gameState);
-                        const cardIndex = gameState.player.hand.findIndex(c => c.uid === cardToUse.uid);
-                        if (cardIndex > -1) {
-                            const [usedCard] = gameState.player.hand.splice(cardIndex, 1);
-                            gameState.player.cardTrash.push(usedCard);
+                const playerHasSpirits = gameState.player.field.some(card => card.type === 'Spirit');
+                // FIXED: Check for targets *after* payment
+                if (playerHasSpirits) {
+                    gameState.targetingState = {
+                        isTargeting: true,
+                        forEffect: effect,
+                        onTarget: (targetUid) => {
+                            applyPowerUpEffect(targetUid, effect.power, effect.duration, gameState);
+                            const cardIndex = gameState.player.hand.findIndex(c => c.uid === cardToUse.uid);
+                            if (cardIndex > -1) {
+                                const [usedCard] = gameState.player.hand.splice(cardIndex, 1);
+                                gameState.player.cardTrash.push(usedCard);
+                            }
                         }
+                    };
+                } else {
+                    // No targets, so effect fizzles. Just move card to trash.
+                    console.log("Power up effect fizzles: no spirit targets.");
+                    const cardIndex = gameState.player.hand.findIndex(c => c.uid === cardToUse.uid);
+                    if (cardIndex > -1) {
+                        const [usedCard] = gameState.player.hand.splice(cardIndex, 1);
+                        gameState.player.cardTrash.push(usedCard);
                     }
-                };
+                }
                 break;
             
             case 'draw':
                 for (let i = 0; i < effect.quantity; i++) {
                     drawCard('player', gameState);
                 }
-                // Move card to trash after drawing
                 const cardIndexDraw = gameState.player.hand.findIndex(c => c.uid === cardToUse.uid);
                 if (cardIndexDraw > -1) {
                     const [usedCard] = gameState.player.hand.splice(cardIndexDraw, 1);
@@ -552,7 +597,6 @@ export function confirmMagicPayment(gameState) {
                 break;
 
             default:
-                // Handle effects with no specific keyword (e.g., just move card to trash)
                 const cardIndexDefault = gameState.player.hand.findIndex(c => c.uid === cardToUse.uid);
                 if (cardIndexDefault > -1) {
                     const [usedCard] = gameState.player.hand.splice(cardIndexDefault, 1);
@@ -561,7 +605,6 @@ export function confirmMagicPayment(gameState) {
                 break;
         }
     } else {
-        // Failsafe if no effect is found for the timing
         const cardIndex = gameState.player.hand.findIndex(c => c.uid === cardToUse.uid);
         if (cardIndex > -1) {
             const [usedCard] = gameState.player.hand.splice(cardIndex, 1);
@@ -578,34 +621,6 @@ export function confirmMagicPayment(gameState) {
     }
 
     return true;
-}
-export function initiateMagicPayment(cardUid, timing, gameState) {
-    const cardToUse = gameState.player.hand.find(c => c.uid === cardUid);
-    if (!cardToUse) return;
-
-    const isFlashTiming = gameState.flashState.isActive && gameState.flashState.priority === 'player';
-    const isMainStep = gameState.phase === 'main';
-
-    if (!cardToUse.effects.some(e => e.timing === timing)) return;
-
-    if (timing === 'flash' && !isFlashTiming && !isMainStep) return;
-    if (timing === 'main' && !isMainStep) return;
-
-    const finalCost = calculateCost(cardToUse, 'player', gameState);
-    const totalAvailableCores = gameState.player.reserve.length + gameState.player.field.reduce((sum, card) => sum + (card.cores ? card.cores.length : 0), 0);
-
-    if (totalAvailableCores < finalCost) {
-        console.log("Not enough available cores to use magic.");
-        return;
-    }
-
-    gameState.magicPaymentState = {
-        isPaying: true,
-        cardToUse: cardToUse,
-        costToPay: finalCost,
-        selectedCores: [],
-        timing: timing
-    };
 }
 
 export function cancelMagicPayment(gameState) {

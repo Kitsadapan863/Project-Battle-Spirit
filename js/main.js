@@ -1,68 +1,27 @@
 // js/main.js
 import { allCards } from './cards.js';
-import { updateUI, phaseBtn, restartBtn, cancelSummonBtn, confirmSummonBtn, confirmPlacementBtn, gameOverModal, takeDamageBtn, playerHandContainer, playerFieldElement, playerReserveCoreContainer, passFlashBtn, confirmMagicBtn, cancelMagicBtn, cardTrashModal, closeTrashViewerBtn, playerCardTrashZone, opponentCardTrashZone, opponentCardTrashModal, closeOpponentTrashViewerBtn, confirmDiscardBtn, confirmCoreRemovalBtn, cancelCoreRemovalBtn, cancelEffectChoiceBtn, opponentFieldElement,opponentHandContainer  } from './ui.js';
+import { 
+    updateUI, phaseBtn, restartBtn, cancelSummonBtn, confirmSummonBtn, confirmPlacementBtn, gameOverModal, takeDamageBtn, 
+    playerHandContainer, playerFieldElement, playerReserveCoreContainer, passFlashBtn, confirmMagicBtn, cancelMagicBtn, 
+    cardTrashModal, closeTrashViewerBtn, playerCardTrashZone, opponentCardTrashZone, opponentCardTrashModal, 
+    closeOpponentTrashViewerBtn, confirmDiscardBtn, confirmCoreRemovalBtn, cancelCoreRemovalBtn, cancelEffectChoiceBtn,
+    opponentHandContainer, opponentFieldElement, cardTrashViewerContainer, opponentCardTrashViewerContainer 
+} from './ui.js';
 import { getSpiritLevelAndBP, getCardLevel } from './utils.js';
 import { summonSpiritAI, drawCard, calculateCost, checkGameOver, cancelSummon, confirmSummon, confirmPlacement, performRefreshStep, takeLifeDamage, declareBlock, initiateSummon, selectCoreForPlacement, selectCoreForPayment, handleSpiritClick, enterFlashTiming, passFlash, initiateMagicPayment, confirmMagicPayment, cancelMagicPayment, initiateDiscard, selectCardForDiscard, confirmDiscard, confirmCoreRemoval, cancelCoreRemoval, clearTemporaryBuffs } from './actions.js';
 import {resolveTriggeredEffects} from './effects.js'
-// Card Detail Viewer Logic
-const cardDetailViewer = document.getElementById('card-detail-viewer');
-const detailCardImage = document.getElementById('detail-card-image');
-const detailCardEffects = document.getElementById('detail-card-effects');
 
 let gameState;
-function formatEffectText(card) {
-    if (!card.effects || card.effects.length === 0) {
-        return '';
-    }
-    // จัดรูปแบบข้อความ Effect ให้อ่านง่าย
-    return card.effects.map(effect => {
-        // const timing = `<strong>[${effect.timing.charAt(0).toUpperCase() + effect.timing.slice(1)}]</strong>`;
-        const description = effect.description.replace(/\\n/g, '<br>');
-        return `${description}`;
-    }).join('<br><br>');
-}
 
-function showCardDetails(cardId) {
-    const allPlayerCards = [...gameState.player.hand, ...gameState.player.field];
-    const allOpponentCards = [...gameState.opponent.hand, ...gameState.opponent.field];
-    const cardData = allPlayerCards.find(c => c.uid === cardId) || allOpponentCards.find(c => c.uid === cardId);
-
-    if (cardData) {
-        detailCardImage.src = cardData.image;
-        detailCardEffects.innerHTML = formatEffectText(cardData);
-        cardDetailViewer.classList.add('visible');
-    }
-}
-
-function hideCardDetails() {
-    cardDetailViewer.classList.remove('visible');
-}
-
-function delegateHover(event) {
-    const cardEl = event.target.closest('.card');
-    if (cardEl) {
-        // สำหรับการ์ดบนมือ AI จะไม่แสดงรายละเอียด
-        const isOpponentHandCard = cardEl.closest('#opponent-hand');
-        if (!isOpponentHandCard) {
-            showCardDetails(cardEl.id);
-        }
-    }
-}
-
-function delegateMouseOut(event) {
-    const cardEl = event.target.closest('.card');
-    if (cardEl) {
-        hideCardDetails();
-    }
-}
 const callbacks = {
     onInitiateSummon: (cardUid) => {
         initiateSummon(cardUid, gameState);
         updateUI(gameState, callbacks);
     },
     onSpiritClick: (cardData) => {
-        handleSpiritClick(cardData, gameState);
-        updateUI(gameState, callbacks);
+        if (handleSpiritClick(cardData, gameState)) {
+            updateUI(gameState, callbacks);
+        }
     },
     onSelectCoreForPayment: (coreId, from, spiritUid) => {
         selectCoreForPayment(coreId, from, spiritUid, gameState);
@@ -82,7 +41,58 @@ const callbacks = {
     }
 };
 
-// ... (advancePhase, startPlayerTurn, etc. are the same) ...
+// --- Card Detail Viewer Logic ---
+const cardDetailViewer = document.getElementById('card-detail-viewer');
+const detailCardImage = document.getElementById('detail-card-image');
+const detailCardEffects = document.getElementById('detail-card-effects');
+
+function formatEffectText(card) {
+    if (!card.effects || card.effects.length === 0) {
+        return '';
+    }
+    return card.effects.map(effect => {
+        const timingText = effect.timing.charAt(0).toUpperCase() + effect.timing.slice(1);
+        const timing = `<strong>[${timingText}]</strong>`;
+        const description = effect.description.replace(/\\n/g, '<br>');
+        return `${timing}<br>${description}`;
+    }).join('<br><br>');
+}
+
+function showCardDetails(cardId) {
+    const allPlayerCards = [...gameState.player.hand, ...gameState.player.field, ...gameState.player.cardTrash];
+    const allOpponentCards = [...gameState.opponent.hand, ...gameState.opponent.field, ...gameState.opponent.cardTrash];
+    const cardData = allPlayerCards.find(c => c.uid === cardId) || allOpponentCards.find(c => c.uid === cardId);
+
+    if (cardData) {
+        detailCardImage.src = cardData.image;
+        detailCardEffects.innerHTML = formatEffectText(cardData);
+        cardDetailViewer.classList.add('visible');
+    }
+}
+
+function hideCardDetails() {
+    cardDetailViewer.classList.remove('visible');
+}
+
+function delegateHover(event) {
+    const cardEl = event.target.closest('.card');
+    if (cardEl) {
+        const isOpponentHandCard = cardEl.closest('#opponent-hand');
+        if (!isOpponentHandCard) {
+            showCardDetails(cardEl.id);
+        }
+    }
+}
+
+function delegateMouseOut(event) {
+    const cardEl = event.target.closest('.card');
+    if (cardEl) {
+        hideCardDetails();
+    }
+}
+// --- จบส่วน Card Detail Viewer Logic ---
+
+
 function advancePhase() {
     if (gameState.turn !== 'player' || gameState.summoningState.isSummoning || gameState.placementState.isPlacing || gameState.attackState.isAttacking || gameState.flashState.isActive || gameState.discardState.isDiscarding || gameState.targetingState.isTargeting) return;
 
@@ -233,7 +243,7 @@ function aiAttackStep(isNewAttackDeclaration) {
 function endAiTurn() {
     if (gameState.gameover) return;
     gameState.phase = 'end';
-    clearTemporaryBuffs('opponent', gameState); // Clear opponent's buffs
+    clearTemporaryBuffs('opponent', gameState);
     updateUI(gameState, callbacks);
     setTimeout(() => {
         gameState.turn = 'player';
@@ -244,7 +254,7 @@ function endAiTurn() {
 
 function endTurn() {
     gameState.phase = 'end';
-    clearTemporaryBuffs('player', gameState); // Clear player's buffs
+    clearTemporaryBuffs('player', gameState);
     updateUI(gameState, callbacks);
     setTimeout(() => {
         gameState.turn = 'opponent';
@@ -267,7 +277,7 @@ function initializeGame() {
         discardState: { isDiscarding: false, count: 0, cardToDiscard: null },
         coreRemovalConfirmationState: { isConfirming: false, coreId: null, from: null, sourceUid: null },
         targetingState: { isTargeting: false, forEffect: null, onTarget: null },
-        effectChoiceState: { isChoosing: false, card: null }, // Add effect choice state
+        effectChoiceState: { isChoosing: false, card: null },
         player: { life: 5, deck: createDeck(), hand: [], field: [], reserve: [], costTrash: [], cardTrash: [] },
         opponent: { life: 5, deck: createDeck(), hand: [], field: [], reserve: [], costTrash: [], cardTrash: [] }
     };
@@ -279,14 +289,30 @@ function initializeGame() {
         gameState.player.reserve.push({ id: `core-plr-init-${i}` });
         gameState.opponent.reserve.push({ id: `core-opp-init-${i}` });
     }
+
+    const hoverAreas = [
+        playerHandContainer, 
+        playerFieldElement, 
+        opponentFieldElement, 
+        opponentHandContainer,
+        cardTrashViewerContainer,
+        opponentCardTrashViewerContainer
+    ];
+    hoverAreas.forEach(area => {
+        if (area) {
+            area.addEventListener('mouseover', delegateHover);
+            area.addEventListener('mouseout', delegateMouseOut);
+        }
+    });
+
     gameOverModal.classList.remove('visible');
     startPlayerTurn();
 }
 
-// ... (Event Listeners) ...
 phaseBtn.addEventListener('click', advancePhase);
 restartBtn.addEventListener('click', initializeGame);
 
+// ... (Button event listeners) ...
 cancelSummonBtn.addEventListener('click', () => {
     cancelSummon(gameState);
     updateUI(gameState, callbacks);
@@ -305,7 +331,6 @@ takeDamageBtn.addEventListener('click', () => {
     updateUI(gameState, callbacks);
     setTimeout(() => aiAttackStep(true), 500);
 });
-
 playerCardTrashZone.addEventListener('click', () => {
     cardTrashModal.classList.add('visible');
 });
@@ -318,23 +343,19 @@ closeOpponentTrashViewerBtn.addEventListener('click', () => {
 closeTrashViewerBtn.addEventListener('click', () => {
     cardTrashModal.classList.remove('visible');
 });
-
 passFlashBtn.addEventListener('click', () => {
     const resolutionStatus = passFlash(gameState);
     updateUI(gameState, callbacks);
-
     if (!gameState.flashState.isActive) {
         if (resolutionStatus === 'battle_resolved') {
             setTimeout(() => aiAttackStep(true), 500);
         }
         return;
     }
-
     if (gameState.flashState.priority === 'opponent') {
         setTimeout(() => {
             const finalResolutionStatus = passFlash(gameState);
             updateUI(gameState, callbacks);
-
             if (!gameState.flashState.isActive) {
                 if (finalResolutionStatus === 'battle_resolved') {
                     setTimeout(() => aiAttackStep(true), 500);
@@ -343,12 +364,10 @@ passFlashBtn.addEventListener('click', () => {
         }, 500);
     }
 });
-
 cancelMagicBtn.addEventListener('click', () => {
     cancelMagicPayment(gameState);
     updateUI(gameState, callbacks);
 });
-
 confirmMagicBtn.addEventListener('click', () => {
     if (confirmMagicPayment(gameState)) {
         updateUI(gameState, callbacks);
@@ -357,7 +376,6 @@ confirmMagicBtn.addEventListener('click', () => {
             setTimeout(() => {
                 const resolutionStatus = passFlash(gameState);
                 updateUI(gameState, callbacks);
-
                 if (!gameState.flashState.isActive) {
                      if (resolutionStatus === 'battle_resolved') {
                          setTimeout(() => aiAttackStep(true), 500);
@@ -367,7 +385,6 @@ confirmMagicBtn.addEventListener('click', () => {
         }
     }
 });
-
 confirmDiscardBtn.addEventListener('click', () => {
     if (confirmDiscard(gameState)) {
         updateUI(gameState, callbacks);
@@ -376,7 +393,6 @@ confirmDiscardBtn.addEventListener('click', () => {
         }
     }
 });
-
 confirmCoreRemovalBtn.addEventListener('click', () => {
     if (confirmCoreRemoval(gameState)) {
         updateUI(gameState, callbacks);
@@ -386,8 +402,6 @@ cancelCoreRemovalBtn.addEventListener('click', () => {
     cancelCoreRemoval(gameState);
     updateUI(gameState, callbacks);
 });
-
-
 cancelEffectChoiceBtn.addEventListener('click', () => {
     gameState.effectChoiceState = { isChoosing: false, card: null };
     updateUI(gameState, callbacks);
@@ -423,50 +437,56 @@ function delegateClick(event) {
         }
 
         if (cardDataInHand) {
-            if (gameState.discardState.isDiscarding && gameState.turn === 'player') {
+            if (gameState.discardState.isDiscarding) { // Simplified: can always select/deselect discard
                 callbacks.onSelectCardForDiscard(cardId);
                 return;
             }
 
-            const isPlayerTurn = gameState.turn === 'player';
             const isPaying = gameState.summoningState.isSummoning || gameState.magicPaymentState.isPaying;
             const isPlacing = gameState.placementState.isPlacing;
-            
-            if (isPlayerTurn && !isPaying && !isPlacing) {
+            const canTakeAction = !isPaying && !isPlacing;
+
+            if (canTakeAction) {
+                const isPlayerTurn = gameState.turn === 'player';
                 const isMainStep = gameState.phase === 'main';
-                const isFlashTiming = gameState.flashState.isActive && gameState.flashState.priority === 'player';
+                const isFlashTimingWithPlayerPriority = gameState.flashState.isActive && gameState.flashState.priority === 'player';
                 
                 const canUseMainEffect = cardDataInHand.effects?.some(e => e.timing === 'main');
                 const canUseFlashEffect = cardDataInHand.effects?.some(e => e.timing === 'flash');
 
-                if (isFlashTiming && canUseFlashEffect) {
+                // ### FIXED LOGIC ###
+                // Priority 1: Flash Timing Action
+                if (isFlashTimingWithPlayerPriority && canUseFlashEffect) {
                     callbacks.onUseMagic(cardId, 'flash');
-                } else if (isMainStep && cardDataInHand.type === 'Magic') {
-                    
-                    // FIXED LOGIC: Handle choice between Main and Flash
-                    if (canUseMainEffect && canUseFlashEffect) {
-                        gameState.effectChoiceState = { isChoosing: true, card: cardDataInHand };
-                        const effectChoiceButtons = document.getElementById('effect-choice-buttons');
-                        effectChoiceButtons.innerHTML = `
-                            <button id="effect-choice-main-btn">Use Main</button>
-                            <button id="effect-choice-flash-btn">Use Flash</button>
-                        `;
-                        document.getElementById('effect-choice-main-btn').onclick = () => {
-                            gameState.effectChoiceState = { isChoosing: false, card: null };
+                } 
+                // Priority 2: Player's Main Step Actions
+                else if (isPlayerTurn && isMainStep) {
+                    if (cardDataInHand.type === 'Magic') {
+                        if (canUseMainEffect && canUseFlashEffect) {
+                            // Show choice modal
+                            gameState.effectChoiceState = { isChoosing: true, card: cardDataInHand };
+                            const effectChoiceButtons = document.getElementById('effect-choice-buttons');
+                            effectChoiceButtons.innerHTML = `
+                                <button id="effect-choice-main-btn">Use Main</button>
+                                <button id="effect-choice-flash-btn">Use Flash</button>
+                            `;
+                            document.getElementById('effect-choice-main-btn').onclick = () => {
+                                gameState.effectChoiceState = { isChoosing: false, card: null };
+                                callbacks.onUseMagic(cardId, 'main');
+                            };
+                            document.getElementById('effect-choice-flash-btn').onclick = () => {
+                                gameState.effectChoiceState = { isChoosing: false, card: null };
+                                callbacks.onUseMagic(cardId, 'flash');
+                            };
+                            updateUI(gameState, callbacks);
+                        } else if (canUseMainEffect) {
                             callbacks.onUseMagic(cardId, 'main');
-                        };
-                        document.getElementById('effect-choice-flash-btn').onclick = () => {
-                            gameState.effectChoiceState = { isChoosing: false, card: null };
+                        } else if (canUseFlashEffect) {
                             callbacks.onUseMagic(cardId, 'flash');
-                        };
-                        updateUI(gameState, callbacks);
-                    } else if (canUseMainEffect) {
-                        callbacks.onUseMagic(cardId, 'main');
-                    } else if (canUseFlashEffect) {
-                        callbacks.onUseMagic(cardId, 'flash');
+                        }
+                    } else if (cardDataInHand.type === 'Spirit' || cardDataInHand.type === 'Nexus'){
+                        callbacks.onInitiateSummon(cardId);
                     }
-                } else if (isMainStep && (cardDataInHand.type === 'Spirit' || cardDataInHand.type === 'Nexus')){
-                    callbacks.onInitiateSummon(cardId);
                 }
             }
         } 
@@ -476,13 +496,9 @@ function delegateClick(event) {
     }
 }
 
+
 playerFieldElement.addEventListener('click', delegateClick);
 playerReserveCoreContainer.addEventListener('click', delegateClick);
 playerHandContainer.addEventListener('click', delegateClick);
 
-const hoverAreas = [playerHandContainer, playerFieldElement, opponentFieldElement, opponentHandContainer];
-hoverAreas.forEach(area => {
-    area.addEventListener('mouseover', delegateHover);
-    area.addEventListener('mouseout', delegateMouseOut);
-});
 document.addEventListener('DOMContentLoaded', initializeGame);
