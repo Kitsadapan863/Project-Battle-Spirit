@@ -1,12 +1,60 @@
 // js/main.js
 import { allCards } from './cards.js';
-import { updateUI, phaseBtn, restartBtn, cancelSummonBtn, confirmSummonBtn, confirmPlacementBtn, gameOverModal, takeDamageBtn, playerHandContainer, playerFieldElement, playerReserveCoreContainer, passFlashBtn, confirmMagicBtn, cancelMagicBtn, cardTrashModal, closeTrashViewerBtn, playerCardTrashZone, opponentCardTrashZone, opponentCardTrashModal, closeOpponentTrashViewerBtn, confirmDiscardBtn, confirmCoreRemovalBtn, cancelCoreRemovalBtn, cancelEffectChoiceBtn  } from './ui.js';
+import { updateUI, phaseBtn, restartBtn, cancelSummonBtn, confirmSummonBtn, confirmPlacementBtn, gameOverModal, takeDamageBtn, playerHandContainer, playerFieldElement, playerReserveCoreContainer, passFlashBtn, confirmMagicBtn, cancelMagicBtn, cardTrashModal, closeTrashViewerBtn, playerCardTrashZone, opponentCardTrashZone, opponentCardTrashModal, closeOpponentTrashViewerBtn, confirmDiscardBtn, confirmCoreRemovalBtn, cancelCoreRemovalBtn, cancelEffectChoiceBtn, opponentFieldElement,opponentHandContainer  } from './ui.js';
 import { getSpiritLevelAndBP, getCardLevel } from './utils.js';
 import { summonSpiritAI, drawCard, calculateCost, checkGameOver, cancelSummon, confirmSummon, confirmPlacement, performRefreshStep, takeLifeDamage, declareBlock, initiateSummon, selectCoreForPlacement, selectCoreForPayment, handleSpiritClick, enterFlashTiming, passFlash, initiateMagicPayment, confirmMagicPayment, cancelMagicPayment, initiateDiscard, selectCardForDiscard, confirmDiscard, confirmCoreRemoval, cancelCoreRemoval, clearTemporaryBuffs } from './actions.js';
 import {resolveTriggeredEffects} from './effects.js'
+// Card Detail Viewer Logic
+const cardDetailViewer = document.getElementById('card-detail-viewer');
+const detailCardImage = document.getElementById('detail-card-image');
+const detailCardEffects = document.getElementById('detail-card-effects');
 
 let gameState;
+function formatEffectText(card) {
+    if (!card.effects || card.effects.length === 0) {
+        return '';
+    }
+    // จัดรูปแบบข้อความ Effect ให้อ่านง่าย
+    return card.effects.map(effect => {
+        // const timing = `<strong>[${effect.timing.charAt(0).toUpperCase() + effect.timing.slice(1)}]</strong>`;
+        const description = effect.description.replace(/\\n/g, '<br>');
+        return `${description}`;
+    }).join('<br><br>');
+}
 
+function showCardDetails(cardId) {
+    const allPlayerCards = [...gameState.player.hand, ...gameState.player.field];
+    const allOpponentCards = [...gameState.opponent.hand, ...gameState.opponent.field];
+    const cardData = allPlayerCards.find(c => c.uid === cardId) || allOpponentCards.find(c => c.uid === cardId);
+
+    if (cardData) {
+        detailCardImage.src = cardData.image;
+        detailCardEffects.innerHTML = formatEffectText(cardData);
+        cardDetailViewer.classList.add('visible');
+    }
+}
+
+function hideCardDetails() {
+    cardDetailViewer.classList.remove('visible');
+}
+
+function delegateHover(event) {
+    const cardEl = event.target.closest('.card');
+    if (cardEl) {
+        // สำหรับการ์ดบนมือ AI จะไม่แสดงรายละเอียด
+        const isOpponentHandCard = cardEl.closest('#opponent-hand');
+        if (!isOpponentHandCard) {
+            showCardDetails(cardEl.id);
+        }
+    }
+}
+
+function delegateMouseOut(event) {
+    const cardEl = event.target.closest('.card');
+    if (cardEl) {
+        hideCardDetails();
+    }
+}
 const callbacks = {
     onInitiateSummon: (cardUid) => {
         initiateSummon(cardUid, gameState);
@@ -432,4 +480,9 @@ playerFieldElement.addEventListener('click', delegateClick);
 playerReserveCoreContainer.addEventListener('click', delegateClick);
 playerHandContainer.addEventListener('click', delegateClick);
 
+const hoverAreas = [playerHandContainer, playerFieldElement, opponentFieldElement, opponentHandContainer];
+hoverAreas.forEach(area => {
+    area.addEventListener('mouseover', delegateHover);
+    area.addEventListener('mouseout', delegateMouseOut);
+});
 document.addEventListener('DOMContentLoaded', initializeGame);

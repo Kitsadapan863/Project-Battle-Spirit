@@ -841,3 +841,47 @@ body {
 #effect-choice-flash-btn {
     background: linear-gradient(45deg, #ffc107, #ff9800);
 }
+
+/* Card Detail Viewer Styles */
+.card-detail-viewer {
+    position: fixed;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 280px;
+    background: rgba(10, 20, 40, 0.9);
+    border: 2px solid #00d2ff;
+    border-radius: 15px;
+    padding: 15px;
+    box-shadow: 0 0 25px rgba(0, 210, 255, 0.5);
+    display: none; /* ซ่อนไว้เป็นค่าเริ่มต้น */
+    flex-direction: column;
+    gap: 15px;
+    z-index: 2000;
+    backdrop-filter: blur(5px);
+    pointer-events: none; /* ทำให้เม้าส์คลิกทะลุได้ */
+}
+
+.card-detail-viewer.visible {
+    display: flex; /* แสดงผลเมื่อมีคลาส visible */
+}
+
+#detail-card-image {
+    width: 100%;
+    border-radius: 8px;
+}
+
+.card-effects-text {
+    font-family: 'Segoe UI', sans-serif;
+    color: #fff;
+    white-space: pre-wrap; /* ทำให้ข้อความขึ้นบรรทัดใหม่ตาม \n */
+    line-height: 1.6;
+    max-height: 300px; /* จำกัดความสูงและให้มี scrollbar */
+    overflow-y: auto;
+    font-size: 0.9em;
+    padding-right: 5px; /* เพิ่มช่องว่างสำหรับ scrollbar */
+}
+
+.card-effects-text strong {
+    color: #ffc107; /* สีทองสำหรับ Timing เช่น [Main] [Flash] */
+}
