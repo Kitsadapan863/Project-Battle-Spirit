@@ -362,26 +362,22 @@ closeTrashViewerBtn.addEventListener('click', () => {
     cardTrashModal.classList.remove('visible');
 });
 
-// *** START: แก้ไข Event Listener ของปุ่ม Pass ***
 passFlashBtn.addEventListener('click', () => {
     const resolutionStatus = passFlash(gameState);
     updateUI(gameState, callbacks);
 
     if (!gameState.flashState.isActive) {
-        // ถ้าการต่อสู้จบลง และเป็นเทิร์นของ AI ให้ AI โจมตีต่อ
         if (resolutionStatus === 'battle_resolved' && gameState.turn === 'opponent') {
             setTimeout(() => aiAttackStep(true), 500);
         }
         return;
     }
 
-    // จำลองการ Pass ของ AI
     if (gameState.flashState.priority === 'opponent') {
         setTimeout(() => {
             const finalResolutionStatus = passFlash(gameState);
             updateUI(gameState, callbacks);
             if (!gameState.flashState.isActive) {
-                // ถ้าการต่อสู้จบลง และเป็นเทิร์นของ AI ให้ AI โจมตีต่อ
                 if (finalResolutionStatus === 'battle_resolved' && gameState.turn === 'opponent') {
                     setTimeout(() => aiAttackStep(true), 500);
                 }
@@ -389,7 +385,6 @@ passFlashBtn.addEventListener('click', () => {
         }, 500);
     }
 });
-// *** END: แก้ไข Event Listener ของปุ่ม Pass ***
 
 cancelMagicBtn.addEventListener('click', () => {
     cancelMagicPayment(gameState);
@@ -412,14 +407,24 @@ confirmMagicBtn.addEventListener('click', () => {
         }
     }
 });
+
+// *** START: แก้ไข Event Listener ของปุ่ม Confirm Discard ***
 confirmDiscardBtn.addEventListener('click', () => {
     if (confirmDiscard(gameState)) {
         updateUI(gameState, callbacks);
+        // ตรวจสอบว่าการทิ้งการ์ดเสร็จสิ้นแล้วหรือยัง
         if (!gameState.discardState.isDiscarding) {
-            proceedToRefresh();
+            // จะเรียกใช้ proceedToRefresh() ก็ต่อเมื่อการทิ้งการ์ดนั้นเกิดใน Draw Phase เท่านั้น
+            if (gameState.phase === 'draw') {
+                proceedToRefresh();
+            }
+            // ถ้าการทิ้งการ์ดเกิดใน Main Phase (จาก Strong Draw) เราจะไม่ทำอะไรเลย
+            // เพื่อให้ผู้เล่นสามารถเล่นใน Main Phase ต่อได้
         }
     }
 });
+// *** END: แก้ไข Event Listener ของปุ่ม Confirm Discard ***
+
 confirmCoreRemovalBtn.addEventListener('click', () => {
     if (confirmCoreRemoval(gameState)) {
         updateUI(gameState, callbacks);

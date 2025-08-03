@@ -579,12 +579,22 @@ export function confirmMagicPayment(gameState) {
     
     if (effectToUse) {
         switch (effectToUse.keyword) {
+            // *** START: แก้ไข case 'draw' ***
             case 'draw':
+                // 1. จั่วการ์ดตามจำนวนที่กำหนด
                 for (let i = 0; i < effectToUse.quantity; i++) {
                     drawCard('player', gameState);
                 }
+                
+                // 2. ตรวจสอบว่าต้องมีการทิ้งการ์ดต่อหรือไม่
+                if (effectToUse.discard && effectToUse.discard > 0) {
+                    initiateDiscard(effectToUse.discard, gameState);
+                }
+
+                // 3. ย้ายการ์ดเวทมนตร์ที่ใช้แล้วลงแทรช
                 moveUsedMagicToTrash(cardToUse.uid, gameState);
                 break;
+            // *** END: แก้ไข case 'draw' ***
             
             case 'power up':
                 const validPowerUpTargets = findValidTargets(effectToUse.target, gameState);
