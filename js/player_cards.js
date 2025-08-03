@@ -572,52 +572,6 @@ export const playerCards = [
               description: '[Flash]\nDuring this turn, 1 Spirits gets +3000 BP.' }
         ],
     },
-    //The Burning Canyon
-    {
-        id: 'nexus-burning-canyon',
-        name: 'The Burning Canyon',
-        image: '../images/The Burning Canyon.webp', 
-        cost: 3,
-        symbol_cost:{"red":2},
-        level:{ "level-1":{ "core": 0 }, "level-2":{ "core": 1 } },
-        type: 'Nexus', 
-        color: 'red',
-        effects: [
-            { level: [1, 2], timing: 'onDrawStep', description: '[LV1][LV2] (Your Draw Step)\nDraw 1 card. Then, discard 1 card.' },
-            { level: [2], timing: 'duringBattle', description: '[LV2] (Your Attack Step)\nSpirits you control get +1000BP.' }
-        ],
-        symbol: {"red":1},
-    },
-        {
-        id: 'nexus-burning-canyon',
-        name: 'The Burning Canyon',
-        image: '../images/The Burning Canyon.webp', 
-        cost: 3,
-        symbol_cost:{"red":2},
-        level:{ "level-1":{ "core": 0 }, "level-2":{ "core": 1 } },
-        type: 'Nexus', 
-        color: 'red',
-        effects: [
-            { level: [1, 2], timing: 'onDrawStep', description: '[LV1][LV2] (Your Draw Step)\nDraw 1 card. Then, discard 1 card.' },
-            { level: [2], timing: 'duringBattle', description: '[LV2] (Your Attack Step)\nSpirits you control get +1000BP.' }
-        ],
-        symbol: {"red":1},
-    },
-    {
-        id: 'nexus-burning-canyon',
-        name: 'The Burning Canyon',
-        image: '../images/The Burning Canyon.webp', 
-        cost: 3,
-        symbol_cost:{"red":2},
-        level:{ "level-1":{ "core": 0 }, "level-2":{ "core": 1 } },
-        type: 'Nexus', 
-        color: 'red',
-        effects: [
-            { level: [1, 2], timing: 'onDrawStep', description: '[LV1][LV2] (Your Draw Step)\nDraw 1 card. Then, discard 1 card.' },
-            { level: [2], timing: 'duringBattle', description: '[LV2] (Your Attack Step)\nSpirits you control get +1000BP.' }
-        ],
-        symbol: {"red":1},
-    },
     //The Collapse of Battle Line
     {
         id: 'nexus-battle-line',
@@ -629,7 +583,7 @@ export const playerCards = [
         type: 'Nexus', 
         color: 'blue',
         effects: [
-            { level: [1, 2], timing: 'permanent',keyword: 'add crush', count: 2, description: '[LV1][LV2] (Either Draw Step)\nWhen discarding cards from the opposing deck via [Crush] effects, discard +2 cards.' },
+            { level: [1, 2], timing: 'permanent',keyword: 'add crush', count: 2, description: '[LV1][LV2] (Either Attack Step)\nWhen discarding cards from the opposing deck via [Crush] effects, discard +2 cards.' },
             { level: [2], timing: 'duringBattle', keyword: 'force_max_level_on_crush', description: '[LV2] (Your Attack Step)\nEvery Spirit with [Crush] you control is treated as being on its highest level.' }
         ],
         symbol: {"blue":1},
@@ -644,7 +598,7 @@ export const playerCards = [
         type: 'Nexus', 
         color: 'blue',
         effects: [
-            { level: [1, 2], timing: 'permanent',keyword: 'add crush', count: 2, description: '[LV1][LV2] (Either Draw Step)\nWhen discarding cards from the opposing deck via [Crush] effects, discard +2 cards.' },
+            { level: [1, 2], timing: 'permanent',keyword: 'add crush', count: 2, description: '[LV1][LV2] (Either Attack Step)\nWhen discarding cards from the opposing deck via [Crush] effects, discard +2 cards.' },
             { level: [2], timing: 'duringBattle', keyword: 'force_max_level_on_crush', description: '[LV2] (Your Attack Step)\nEvery Spirit with [Crush] you control is treated as being on its highest level.' }
         ],
         symbol: {"blue":1},
@@ -659,8 +613,54 @@ export const playerCards = [
         type: 'Nexus', 
         color: 'blue',
         effects: [
-            { level: [1, 2], timing: 'permanent',keyword: 'add crush', count: 2, description: '[LV1][LV2] (Either Draw Step)\nWhen discarding cards from the opposing deck via [Crush] effects, discard +2 cards.' },
+            { level: [1, 2], timing: 'permanent',keyword: 'add crush', count: 2, description: '[LV1][LV2] (Either Attack Step)\nWhen discarding cards from the opposing deck via [Crush] effects, discard +2 cards.' },
             { level: [2], timing: 'duringBattle', keyword: 'force_max_level_on_crush', description: '[LV2] (Your Attack Step)\nEvery Spirit with [Crush] you control is treated as being on its highest level.' }
+        ],
+        symbol: {"blue":1},
+    },
+    //The H.Q. filled with Fighting Spirits
+    {
+        id: 'nexus-hq-fighting-spirits',
+        name: 'The H.Q. filled with Fighting Spirits',
+        image: '../images/The H.Q. filled with Fighting Spirits.webp', 
+        cost: 4,
+        symbol_cost:{"blue":3},
+        level:{ "level-1":{ "core": 0 }, "level-2":{ "core": 3 } },
+        type: 'Nexus', 
+        color: 'blue',
+        effects: [
+            { level: [1, 2], timing: 'permanent', keyword: 'enable_crush_on_block', description: "[LV1][LV2] (Opponent's Attack Step)\nYour Spirits' [Crush] effects also activate at (When Blocks)." },
+            { level: [2], timing: 'permanent', keyword: 'core_on_crush', count: 1, description: "[LV2] (Either Attack Step)\nWhen cards are discarded from the opposing deck via [Crush] effects, put a core from the Void to your Reserve." }
+        ],
+        symbol: {"blue":1},
+    },
+        {
+        id: 'nexus-hq-fighting-spirits',
+        name: 'The H.Q. filled with Fighting Spirits',
+        image: '../images/The H.Q. filled with Fighting Spirits.webp', 
+        cost: 4,
+        symbol_cost:{"blue":3},
+        level:{ "level-1":{ "core": 0 }, "level-2":{ "core": 3 } },
+        type: 'Nexus', 
+        color: 'blue',
+        effects: [
+            { level: [1, 2], timing: 'permanent', keyword: 'enable_crush_on_block', description: "[LV1][LV2] (Opponent's Attack Step)\nYour Spirits' [Crush] effects also activate at (When Blocks)." },
+            { level: [2], timing: 'permanent', keyword: 'core_on_crush', count: 1, description: "[LV2] (Either Attack Step)\nWhen cards are discarded from the opposing deck via [Crush] effects, put a core from the Void to your Reserve." }
+        ],
+        symbol: {"blue":1},
+    },
+        {
+        id: 'nexus-hq-fighting-spirits',
+        name: 'The H.Q. filled with Fighting Spirits',
+        image: '../images/The H.Q. filled with Fighting Spirits.webp', 
+        cost: 4,
+        symbol_cost:{"blue":3},
+        level:{ "level-1":{ "core": 0 }, "level-2":{ "core": 3 } },
+        type: 'Nexus', 
+        color: 'blue',
+        effects: [
+            { level: [1, 2], timing: 'permanent', keyword: 'enable_crush_on_block', description: "[LV1][LV2] (Opponent's Attack Step)\nYour Spirits' [Crush] effects also activate at (When Blocks)." },
+            { level: [2], timing: 'permanent', keyword: 'core_on_crush', count: 1, description: "[LV2] (Either Attack Step)\nWhen cards are discarded from the opposing deck via [Crush] effects, put a core from the Void to your Reserve." }
         ],
         symbol: {"blue":1},
     },

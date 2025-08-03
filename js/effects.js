@@ -50,6 +50,26 @@ function applyCrush(card, cardLevel, ownerKey, gameState) {
     console.log(`[Crush] Total cards to discard: ${cardsToDiscard}`);
     const discardedCards = discardOpponentDeck(cardsToDiscard, opponentKey, gameState);
 
+    // *** START: เพิ่มตรรกะสำหรับ The H.Q. filled with Fighting Spirits (LV2) ***
+    if (discardedCards.length > 0) {
+        // วนลูปการ์ดในสนามของ "ผู้ใช้ Crush" เพื่อหา Nexus
+        gameState[ownerKey].field.forEach(fieldCard => {
+            if (fieldCard.type === 'Nexus' && fieldCard.effects) {
+                const fieldCardLevel = getCardLevel(fieldCard).level;
+                const coreOnCrushEffect = fieldCard.effects.find(eff => 
+                    eff.keyword === 'core_on_crush' && eff.level.includes(fieldCardLevel)
+                );
+
+                if (coreOnCrushEffect) {
+                    console.log(`[H.Q. Effect] Gained ${coreOnCrushEffect.count} core from Crush effect.`);
+                    for (let i = 0; i < coreOnCrushEffect.count; i++) {
+                        gameState[ownerKey].reserve.push({ id: `core-from-hq-${Date.now()}-${i}` });
+                    }
+                }
+            }
+        });
+    }
+
     // ตรวจสอบหาเอฟเฟกต์ Power Up ที่เชื่อมโยงกับ Crush (สำหรับ Ambrose)
     if (card.effects) {
         const powerUpEffect = card.effects.find(effect =>

@@ -230,7 +230,7 @@ export function clearTemporaryBuffs(playerKey, gameState) {
     });
     // *** START: เพิ่มการเคลียร์บัฟของผู้เล่น ***
     gameState[playerKey].tempBuffs = [];
-    console.log(`Cleared turn buffs for ${playerKey}`);
+    // console.log(`Cleared turn buffs for ${playerKey}`);
 }
 
 export function handleSpiritClick(cardData, gameState) {
@@ -478,13 +478,34 @@ function resolveBattle(gameState) {
 }
 // *** END: แก้ไขฟังก์ชัน resolveBattle ***
 
-
 export function declareBlock(blockerUid, gameState) {
     if (!gameState.attackState.isAttacking) return;
-    const blocker = gameState.player.field.find(s => s.uid === blockerUid) || gameState.opponent.field.find(s => s.uid === blockerUid);
+    
+    const blockerOwner = 'player'; // ปัจจุบันมีแต่ผู้เล่นที่สามารถ block ได้
+    const blocker = gameState[blockerOwner].field.find(s => s.uid === blockerUid);
+    
     if (blocker) {
         blocker.isExhausted = true;
+
+        // *** START: เพิ่มตรรกะสำหรับ The H.Q. filled with Fighting Spirits ***
+        const hqNexus = gameState[blockerOwner].field.find(card => 
+            card.effects && card.effects.some(eff => eff.keyword === 'enable_crush_on_block')
+        );
+
+        if (hqNexus) {
+            const hqLevel = getCardLevel(hqNexus).level;
+            const hqEffect = hqNexus.effects.find(eff => eff.keyword === 'enable_crush_on_block');
+            const blockerHasCrush = blocker.effects.some(eff => eff.keyword === 'crush');
+
+            if (blockerHasCrush && hqEffect.level.includes(hqLevel)) {
+                console.log(`[H.Q. Effect] ${blocker.name} activates Crush on block!`);
+                // เรียกใช้เอฟเฟกต์ Crush โดยตรง
+                resolveTriggeredEffects(blocker, 'whenAttacks', blockerOwner, gameState);
+            }
+        }
+        // *** END: เพิ่มตรรกะสำหรับ The H.Q. filled with Fighting Spirits ***
     }
+
     gameState.attackState.blockerUid = blockerUid;
     enterFlashTiming(gameState, 'afterBlock');
 }
