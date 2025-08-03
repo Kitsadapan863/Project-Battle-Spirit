@@ -222,11 +222,15 @@ export function clearBattleBuffs(playerKey, gameState) {
 }
 
 export function clearTemporaryBuffs(playerKey, gameState) {
+    // เคลียร์บัฟบน Spirit
     gameState[playerKey].field.forEach(spirit => {
         if (spirit.tempBuffs && spirit.tempBuffs.length > 0) {
             spirit.tempBuffs = spirit.tempBuffs.filter(buff => buff.duration !== 'turn');
         }
     });
+    // *** START: เพิ่มการเคลียร์บัฟของผู้เล่น ***
+    gameState[playerKey].tempBuffs = [];
+    console.log(`Cleared turn buffs for ${playerKey}`);
 }
 
 export function handleSpiritClick(cardData, gameState) {
@@ -253,6 +257,16 @@ export function handleSpiritClick(cardData, gameState) {
     if (gameState.turn === 'player' && gameState.phase === 'attack' && !cardData.isExhausted && !gameState.attackState.isAttacking && gameState.gameTurn > 1) {
         const attacker = gameState.player.field.find(s => s.uid === cardData.uid);
         if (attacker) {
+            // *** START: เพิ่มการตรวจสอบเอฟเฟกต์ Blitz ***
+            const coreChargeBuff = gameState.player.tempBuffs.find(b => b.type === 'core_on_crush_attack');
+            const hasCrush = attacker.effects.some(e => e.keyword === 'crush' && e.level.includes(getCardLevel(attacker).level));
+
+            if (coreChargeBuff && hasCrush) {
+                console.log(`[Blitz Effect] ${attacker.name} attacks with Crush, gaining 1 core.`);
+                gameState.player.costTrash.push({ id: `core-from-blitz-${Date.now()}` });
+            }
+            // *** END: เพิ่มการตรวจสอบเอฟเฟกต์ Blitz ***
+
             attacker.isExhausted = true;
             gameState.attackState = { isAttacking: true, attackerUid: cardData.uid, defender: 'opponent', blockerUid: null, isClash: false };
             resolveTriggeredEffects(attacker, 'whenAttacks', 'player', gameState);
@@ -595,7 +609,13 @@ export function confirmMagicPayment(gameState) {
     
     if (effectToUse) {
         switch (effectToUse.keyword) {
-            
+            case 'core charge':
+                if (effectToUse.buff_type) {
+                    gameState.player.tempBuffs.push({ type: effectToUse.buff_type });
+                    console.log(`[Magic Effect] Applied turn-wide buff: ${effectToUse.buff_type}`);
+                }
+                moveUsedMagicToTrash(cardToUse.uid, gameState);
+                break;
             case 'draw':
                 // 1. จั่วการ์ดตามจำนวนที่กำหนด
                 for (let i = 0; i < effectToUse.quantity; i++) {

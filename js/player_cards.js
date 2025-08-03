@@ -480,6 +480,52 @@ export const playerCards = [
                description: '[Flash]\nDuring this turn, 1 Spirits gets +3000 BP.' }
         ],
     },
+    //Blitz
+    {
+        id: 'magic-blitz',
+        name: 'Blitz',
+        image: '../images/Blitz.webp', 
+        cost: 4,
+        symbol_cost:{"blue":2},
+        type: 'Magic',
+        color: 'blue',
+        effects: [
+            { timing: 'main', keyword:'core charge', buff_type: 'core_on_crush_attack', description: "[Main]\nDuring this turn, each time a spirit you control with Crush attacks, gain 1 core in your Trash." },
+            { timing: 'flash', keyword:'power up',power: 3000,duration: 'turn', 
+              target: { scope: 'any', type: 'spirit', count: 1 },
+              description: '[Flash]\nDuring this turn, 1 Spirits gets +3000 BP.' }
+        ],
+    },
+    {
+        id: 'magic-blitz',
+        name: 'Blitz',
+        image: '../images/Blitz.webp', 
+        cost: 4,
+        symbol_cost:{"blue":2},
+        type: 'Magic',
+        color: 'blue',
+        effects: [
+            { timing: 'main', keyword:'core charge', buff_type: 'core_on_crush_attack', description: "[Main]\nDuring this turn, each time a spirit you control with Crush attacks, gain 1 core in your Trash." },
+            { timing: 'flash', keyword:'power up',power: 3000,duration: 'turn', 
+              target: { scope: 'any', type: 'spirit', count: 1 },
+              description: '[Flash]\nDuring this turn, 1 Spirits gets +3000 BP.' }
+        ],
+    },
+    {
+        id: 'magic-blitz',
+        name: 'Blitz',
+        image: '../images/Blitz.webp', 
+        cost: 4,
+        symbol_cost:{"blue":2},
+        type: 'Magic',
+        color: 'blue',
+        effects: [
+            { timing: 'main', keyword:'core charge', buff_type: 'core_on_crush_attack', description: "[Main]\nDuring this turn, each time a spirit you control with Crush attacks, gain 1 core in your Trash." },
+            { timing: 'flash', keyword:'power up',power: 3000,duration: 'turn', 
+              target: { scope: 'any', type: 'spirit', count: 1 },
+              description: '[Flash]\nDuring this turn, 1 Spirits gets +3000 BP.' }
+        ],
+    },
     //The Burning Canyon
     {
         id: 'nexus-burning-canyon',

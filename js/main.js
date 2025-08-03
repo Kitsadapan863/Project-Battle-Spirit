@@ -296,8 +296,8 @@ function initializeGame() {
         coreRemovalConfirmationState: { isConfirming: false, coreId: null, from: null, sourceUid: null },
         targetingState: { isTargeting: false, forEffect: null, onTarget: null },
         effectChoiceState: { isChoosing: false, card: null },
-        player: { life: 5, deck: createPlayerDeck(), hand: [], field: [], reserve: [], costTrash: [], cardTrash: [] },
-        opponent: { life: 5, deck: createOpponentDeck(), hand: [], field: [], reserve: [], costTrash: [], cardTrash: [] }
+        player: { life: 5, deck: createPlayerDeck(), hand: [], field: [], reserve: [], costTrash: [], cardTrash: [], tempBuffs: [] }, // เพิ่ม tempBuffs
+        opponent: { life: 5, deck: createOpponentDeck(), hand: [], field: [], reserve: [], costTrash: [], cardTrash: [], tempBuffs: [] } // เพิ่ม tempBuffs
     };
 
     for (let i = 0; i < 4; i++) {
