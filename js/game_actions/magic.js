@@ -2,7 +2,7 @@
 import { calculateCost } from '../utils.js';
 import { resolveTriggeredEffects } from '../effects/index.js'; // อาจจะต้องสร้างไฟล์นี้
 // ---- START: แก้ไข/เพิ่ม import ----
-import { drawCard, discardOpponentDeck, initiateDiscard, moveUsedMagicToTrash, destroyCards, applyPowerUpEffect  } from './card.js';
+import { drawCard, discardOpponentDeck, initiateDiscard, moveUsedMagicToTrash, destroyCards, applyPowerUpEffect, cleanupField   } from './card.js';
 // ---- END: แก้ไข/เพิ่ม import ----
 
 // ---- START: เพิ่ม Helper Functions ----
@@ -86,6 +86,9 @@ export function confirmMagicPayment(gameState) {
             }
         }
     }
+
+    // ตรวจสอบสนามทันทีหลังจากจ่ายคอร์เสร็จ
+    cleanupField(gameState);
     
     gameState.magicPaymentState = { isPaying: false, cardToUse: null, costToPay: 0, selectedCores: [], timing: null, effectToUse: null };
     

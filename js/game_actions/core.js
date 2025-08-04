@@ -8,31 +8,57 @@ export function moveCore(coreId, from, sourceCardUid, targetZoneId, targetCardUi
     const player = gameState.player;
     let coreToMove;
     let sourceArray;
+    let sourceCard = null; // <-- เพิ่มตัวแปร sourceCard
+
     if (from === 'card') {
-        const sourceCard = player.field.find(c => c.uid === sourceCardUid);
+        sourceCard = player.field.find(c => c.uid === sourceCardUid); // <-- กำหนดค่าให้ sourceCard
         if (!sourceCard) return false;
         sourceArray = sourceCard.cores;
     } else {
         sourceArray = player.reserve;
     }
+
     const coreIndex = sourceArray.findIndex(c => c.id === coreId);
     if (coreIndex === -1) return false;
+
+    // ---- START: แก้ไขตรรกะส่วนนี้ ----
+    // ตรวจสอบก่อนย้ายคอร์ ว่านี่เป็นคอร์เม็ดสุดท้ายของ Spirit หรือไม่
+    if (sourceCard && sourceCard.type === 'Spirit' && sourceArray.length === 1) {
+        // ถ้าใช่ ให้เปิดหน้าต่างยืนยัน
+        gameState.coreRemovalConfirmationState = { 
+            isConfirming: true, 
+            coreId: coreId, 
+            from: from, 
+            sourceUid: sourceCardUid,
+            // เพิ่มเป้าหมายการย้ายคอร์
+            target: {
+                targetZoneId: targetZoneId,
+                targetCardUid: targetCardUid
+            }
+        };
+        // ไม่ต้องย้ายคอร์ตอนนี้ ให้รอการยืนยัน
+        return false; 
+    }
+    // ---- END: แก้ไขตรรกะส่วนนี้ ----
+
     [coreToMove] = sourceArray.splice(coreIndex, 1);
+
     if (targetCardUid) {
         const destCard = player.field.find(c => c.uid === targetCardUid);
         if (destCard) {
             destCard.cores.push(coreToMove);
         } else {
-            sourceArray.push(coreToMove);
+            sourceArray.push(coreToMove); // คืนคอร์ถ้าหาเป้าหมายไม่เจอ
             return false;
         }
     } else if (targetZoneId && targetZoneId.includes('player-reserve-zone')) {
         player.reserve.push(coreToMove);
     } else {
-        sourceArray.push(coreToMove);
+        sourceArray.push(coreToMove); // คืนคอร์ถ้าไม่มีเป้าหมายที่ถูกต้อง
         return false;
     }
-    cleanupField(gameState);
+
+    cleanupField(gameState); // ตรวจสอบสนามเสมอหลังจากย้ายคอร์
     return true;
 }
 
@@ -40,31 +66,35 @@ export function moveCore(coreId, from, sourceCardUid, targetZoneId, targetCardUi
  * ยืนยันการนำคอร์สุดท้ายออกจาก Spirit
  */
 export function confirmCoreRemoval(gameState) {
-    const { isConfirming, coreId, from, sourceUid } = gameState.coreRemovalConfirmationState;
+    // ---- START: แก้ไขตรรกะทั้งหมดในฟังก์ชันนี้ ----
+    const { isConfirming, coreId, sourceUid, target } = gameState.coreRemovalConfirmationState;
     if (!isConfirming) return false;
-    const { targetSpiritUid } = gameState.placementState;
-    const targetCard = gameState.player.field.find(s => s.uid === targetSpiritUid);
-    if (!targetCard) {
-        cancelCoreRemoval(gameState);
-        return false;
-    }
-    let sourceArray;
-    if (from === 'reserve') {
-        sourceArray = gameState.player.reserve;
-    } else {
-        const sourceCard = gameState.player.field.find(s => s.uid === sourceUid);
-        sourceArray = sourceCard ? sourceCard.cores : undefined;
-    }
+
+    const sourceCard = gameState.player.field.find(s => s.uid === sourceUid);
+    const sourceArray = sourceCard ? sourceCard.cores : undefined;
+
     if (sourceArray) {
         const coreIndex = sourceArray.findIndex(c => c.id === coreId);
         if (coreIndex > -1) {
+            // 1. นำคอร์ออกจาก Spirit ต้นทาง
             const [movedCore] = sourceArray.splice(coreIndex, 1);
-            targetCard.cores.push(movedCore);
+
+            // 2. ย้ายคอร์ไปยังเป้าหมายที่บันทึกไว้ (target)
+            if (target && target.targetCardUid) {
+                const destCard = gameState.player.field.find(c => c.uid === target.targetCardUid);
+                if (destCard) destCard.cores.push(movedCore);
+            } else if (target && target.targetZoneId && target.targetZoneId.includes('player-reserve-zone')) {
+                gameState.player.reserve.push(movedCore);
+            }
+            
+            // 3. เรียก cleanupField เพื่อทำลาย Spirit ที่มี 0 คอร์
             cleanupField(gameState);
         }
     }
+
     cancelCoreRemoval(gameState);
     return true;
+    // ---- END: แก้ไขตรรกะ ----
 }
 
 /**
