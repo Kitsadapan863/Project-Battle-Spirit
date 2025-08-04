@@ -1,9 +1,12 @@
-// js/dragDrop.js
-// หน้าที่: จัดการการลากและวาง Core ในช่วง Main Step
-import { moveCore } from './actions.js';
-import { updateUI, playerReserveCoreContainer } from './ui.js';
+// js/ui/dragDrop.js
+import { moveCore } from '../game_actions/core.js';
+import { updateUI } from './index.js';
+// ---- START: EDIT THIS BLOCK ----
+// Import getDOMElements เข้ามา
+import { getDOMElements } from './components.js';
+// ---- END: EDIT THIS BLOCK ----
 
-function handleDrop(e, gameState) {
+function handleDrop(e, gameState, callbacks) {
     e.preventDefault();
     e.currentTarget.classList.remove('drag-over-core');
     if (gameState.turn !== 'player' || gameState.phase !== 'main' || gameState.summoningState.isSummoning || gameState.placementState.isPlacing) return;
@@ -17,16 +20,12 @@ function handleDrop(e, gameState) {
     const targetElement = e.currentTarget;
     const targetCardUid = targetElement.classList.contains('card') ? targetElement.id : null;
 
-    // FIXED: Pass the correct callbacks object to updateUI
     if (moveCore(coreId, from, sourceCardUid, targetElement.id, targetCardUid, gameState)) {
-        updateUI(gameState, window.appCallbacks); // Assuming callbacks are globally accessible for now
+        updateUI(gameState, callbacks);
     }
 }
 
-export function attachDragAndDropListeners(gameState, callbacks) { // Pass callbacks in
-    // Store callbacks for use in handleDrop
-    window.appCallbacks = callbacks;
-
+export function attachDragAndDropListeners(gameState, callbacks) {
     if (gameState.turn !== 'player' || gameState.phase !== 'main' || gameState.summoningState.isSummoning || gameState.placementState.isPlacing) {
         return;
     }
@@ -53,8 +52,12 @@ export function attachDragAndDropListeners(gameState, callbacks) { // Pass callb
         core.addEventListener('dragend', e => e.currentTarget.classList.remove('dragging'));
     });
 
-    // The selector '#player-field .card' correctly targets both Spirits and Nexuses
+    // ---- START: EDIT THIS BLOCK ----
+    // เรียกใช้ getDOMElements() เพื่อกำหนด dropZones
+    const { playerReserveCoreContainer } = getDOMElements();
     const dropZones = [playerReserveCoreContainer.parentElement, ...document.querySelectorAll('#player-field .card')];
+    // ---- END: EDIT THIS BLOCK ----
+    
     dropZones.forEach(zone => {
         if (zone.dataset.dropListenerAttached === 'true') return;
         zone.dataset.dropListenerAttached = 'true';
@@ -66,6 +69,6 @@ export function attachDragAndDropListeners(gameState, callbacks) { // Pass callb
         zone.addEventListener('dragleave', e => {
             e.currentTarget.classList.remove('drag-over-core');
         });
-        zone.addEventListener('drop', (e) => handleDrop(e, gameState));
+        zone.addEventListener('drop', (e) => handleDrop(e, gameState, callbacks));
     });
 }
