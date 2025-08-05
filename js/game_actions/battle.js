@@ -19,6 +19,21 @@ function clearBattleBuffs(playerKey, gameState) {
 export function declareAttack(attackerUid, gameState) {
     const attacker = gameState.player.field.find(s => s.uid === attackerUid);
     if (!attacker) return;
+
+    // 1. ตรวจสอบว่าผู้เล่นมีบัฟ 'core_on_crush_attack' หรือไม่
+    const coreChargeBuff = gameState.player.tempBuffs.find(b => b.type === 'core_on_crush_attack');
+    
+    if (coreChargeBuff) {
+    // 2. ตรวจสอบว่า Spirit ที่กำลังโจมตีมี Crush ในเลเวลปัจจุบันหรือไม่
+        const attackerLevel = getCardLevel(attacker).level;
+        const hasCrush = attacker.effects?.some(e => e.keyword === 'crush' && e.level.includes(attackerLevel));
+
+        if (hasCrush) {
+            console.log(`[Blitz Effect] ${attacker.name} attacks with Crush, gaining 1 core.`);
+            // 3. ถ้าเงื่อนไขครบ ให้เพิ่มคอร์ลงใน Cost Trash
+            gameState.player.costTrash.push({ id: `core-from-blitz-${Date.now()}` });
+        }
+    }
     
     attacker.isExhausted = true;
     gameState.attackState = { isAttacking: true, attackerUid, defender: 'opponent', blockerUid: null, isClash: false };
