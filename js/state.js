@@ -35,6 +35,7 @@ export function initializeGame() {
         coreRemovalConfirmationState: { isConfirming: false, coreId: null, from: null, sourceUid: null },
         targetingState: { isTargeting: false, forEffect: null, onTarget: null },
         effectChoiceState: { isChoosing: false, card: null },
+        deckDiscardViewerState: { isActive: false, cards: [], owner: null },
         player: { life: 5, deck: createDeck(playerCards), hand: [], field: [], reserve: [], costTrash: [], cardTrash: [], tempBuffs: [] },
         opponent: { life: 5, deck: createDeck(opponentCards), hand: [], field: [], reserve: [], costTrash: [], cardTrash: [], tempBuffs: [] }
     };

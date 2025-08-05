@@ -39,21 +39,47 @@ export function destroyCard(cardUid, ownerKey, gameState) {
 }
 
 /**
- * ทิ้งการ์ดบนสุดของเด็คคู่ต่อสู้
+ * เริ่มกระบวนการแสดงการ์ดที่ถูกทิ้งจากเด็ค
  */
-export function discardOpponentDeck(count, opponentKey, gameState) {
+export function initiateDeckDiscard(count, opponentKey, gameState) {
     let discardedCards = [];
-    console.log(`Activating Deck Discard: ${count} cards`);
+    console.log(`[Effect: Deck Discard] Discarding ${count} cards from ${opponentKey}'s deck.`);
     for (let i = 0; i < count; i++) {
         if (gameState[opponentKey].deck.length > 0) {
             const discardedCard = gameState[opponentKey].deck.shift();
-            gameState[opponentKey].cardTrash.push(discardedCard);
             discardedCards.push(discardedCard);
-            console.log(`[Deck Discard] discarded ${discardedCard.name} from ${opponentKey}'s deck.`);
+        } else {
+            break; // หยุดเมื่อเด็คหมด
         }
     }
-    return discardedCards;
+    
+    if (discardedCards.length > 0) {
+        gameState.deckDiscardViewerState = {
+            isActive: true,
+            cards: discardedCards,
+            owner: opponentKey
+        };
+    }
+    
+    return discardedCards; // ยังคง return การ์ดที่ทิ้ง เผื่อเอฟเฟกต์อื่นต้องใช้
 }
+
+/**
+ * ยืนยันการทิ้งการ์ดจากเด็ค (หลังจากดูใน Modal แล้ว)
+ */
+export function confirmDeckDiscard(gameState) {
+    const { isActive, cards, owner } = gameState.deckDiscardViewerState;
+    if (!isActive) return false;
+
+    // ย้ายการ์ดจาก state ชั่วคราวไปยัง cardTrash จริง
+    gameState[owner].cardTrash.push(...cards);
+    console.log(`Moved ${cards.length} discarded cards to ${owner}'s trash.`);
+
+    // รีเซ็ต state
+    gameState.deckDiscardViewerState = { isActive: false, cards: [], owner: null };
+    return true;
+}
+
 
 /**
  * เริ่มกระบวนการทิ้งการ์ดจากบนมือ

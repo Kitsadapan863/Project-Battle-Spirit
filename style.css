@@ -733,11 +733,23 @@ body {
 }
 
 /* (โค้ดส่วนอื่น ๆ เหมือนเดิม)... */
-#close-opponent-trash-viewer-btn {
+/* #close-opponent-trash-viewer-btn {
     margin-top: 15px;
     padding: 10px 20px;
     font-size: 1rem;
     background: linear-gradient(45deg, #6c757d, #5a6268);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    align-self: center;
+} */
+
+#confirm-deck-discard-btn {
+    margin-top: 15px;
+    padding: 10px 20px;
+    font-size: 1rem;
+    background: linear-gradient(45deg, #007bff, #00d2ff);
     color: white;
     border: none;
     border-radius: 8px;

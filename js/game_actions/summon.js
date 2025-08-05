@@ -134,6 +134,8 @@ export function selectCoreForPlacement(coreId, from, sourceUid, gameState) {
     const { targetSpiritUid } = gameState.placementState;
     const targetCard = gameState.player.field.find(s => s.uid === targetSpiritUid);
     if (!targetCard) return;
+
+    // กรณีคลิก Core บนการ์ดเป้าหมายเอง (เพื่อย้ายกลับ Reserve)
     if (sourceUid === targetSpiritUid) {
         const coreIndex = targetCard.cores.findIndex(c => c.id === coreId);
         if (coreIndex > -1) {
@@ -141,6 +143,7 @@ export function selectCoreForPlacement(coreId, from, sourceUid, gameState) {
             gameState.player.reserve.push(movedCore);
         }
     }
+    // กรณีย้าย Core จากที่อื่นมาใส่การ์ดเป้าหมาย
     else {
         let sourceArray;
         let sourceCard = null;
@@ -150,16 +153,33 @@ export function selectCoreForPlacement(coreId, from, sourceUid, gameState) {
             sourceCard = gameState.player.field.find(s => s.uid === sourceUid);
             sourceArray = sourceCard ? sourceCard.cores : undefined;
         }
+
         if (!sourceArray) return;
+
         const coreIndex = sourceArray.findIndex(c => c.id === coreId);
         if (coreIndex > -1) {
+            // --- START: โค้ดที่แก้ไข ---
+            // ตรวจสอบว่าเป็น Core เม็ดสุดท้ายหรือไม่
             if (sourceCard && sourceCard.type === 'Spirit' && sourceArray.length === 1) {
-                gameState.coreRemovalConfirmationState = { isConfirming: true, coreId: coreId, from: from, sourceUid: sourceUid };
-                return;
+                // ถ้าใช่ ให้เปิดหน้าต่างยืนยัน พร้อม "บันทึกเป้าหมาย" ที่จะย้ายไป
+                gameState.coreRemovalConfirmationState = { 
+                    isConfirming: true, 
+                    coreId: coreId, 
+                    from: 'card', 
+                    sourceUid: sourceUid,
+                    target: { // บันทึกเป้าหมายการย้าย
+                        targetZoneId: 'player-field',
+                        targetCardUid: targetSpiritUid 
+                    }
+                };
+                return; // หยุดรอการยืนยันจากผู้ใช้
             }
+            // --- END: โค้ดที่แก้ไข ---
+
+            // ถ้าย้ายได้เลย (ไม่ใช่ Core เม็ดสุดท้าย)
             const [movedCore] = sourceArray.splice(coreIndex, 1);
             targetCard.cores.push(movedCore);
-            cleanupField(gameState);
+            cleanupField(gameState); // ตรวจสอบสนามหลังย้าย เผื่อมี Spirit ที่ต้องทำลาย
         }
     }
 }

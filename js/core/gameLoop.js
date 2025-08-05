@@ -155,7 +155,11 @@ export function aiAttackStep(gameState, callbacks, isNewAttackDeclaration) {
             attacker.isExhausted = true;
             gameState.attackState = { isAttacking: true, attackerUid: attacker.uid, defender: 'player', blockerUid: null, isClash: false };
             resolveTriggeredEffects(attacker, 'whenAttacks', 'opponent', gameState);
-            enterFlashTiming(gameState, 'beforeBlock');
+            
+            if (!gameState.deckDiscardViewerState.isActive) {
+                enterFlashTiming(gameState, 'beforeBlock');
+            }
+            
             updateUI(gameState, callbacks);
         } else {
             setTimeout(() => endAiTurn(gameState, callbacks), 500);

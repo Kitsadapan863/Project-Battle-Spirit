@@ -39,7 +39,14 @@ export function declareAttack(attackerUid, gameState) {
     gameState.attackState = { isAttacking: true, attackerUid, defender: 'opponent', blockerUid: null, isClash: false };
     
     resolveTriggeredEffects(attacker, 'whenAttacks', 'player', gameState);
-    enterFlashTiming(gameState, 'beforeBlock');
+    
+    // ถ้าเอฟเฟกต์ 'whenAttacks' ไม่ได้เปิดหน้าต่าง Deck Discard Viewer
+    // ให้เข้าสู่ Flash Timing ทันที แต่ถ้าเปิดอยู่ ให้รอผู้เล่นกดยืนยันก่อน
+    console.log("deckDiscardViewerState", gameState.deckDiscardViewerState)
+    if (!gameState.deckDiscardViewerState.isActive) {
+        enterFlashTiming(gameState, 'beforeBlock');
+    }
+
 }
 
 /**

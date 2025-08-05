@@ -1,15 +1,12 @@
 // js/ui/modals.js
 import { getSpiritLevelAndBP } from "../utils.js";
-
-// Import DOMElements
-// (ต้องมีวิธีในการเข้าถึง DOM elements ที่สร้างใน components.js)
-// เราจะใช้ object ที่ return จาก getDOMElements()
+import { createCardElement } from "./components.js";
 
 /**
  * อัปเดตการแสดงผลของ Modal ทั้งหมด
  * @param {object} gameState 
  */
-export function updateAllModals(gameState) {
+export function updateAllModals(gameState, callbacks) {
     const modals = {
         summonPaymentOverlay: document.getElementById('summon-payment-overlay'),
         magicPaymentOverlay: document.getElementById('magic-payment-overlay'),
@@ -21,6 +18,7 @@ export function updateAllModals(gameState) {
         targetingOverlay: document.getElementById('targeting-overlay'),
         effectChoiceModal: document.getElementById('effect-choice-modal'),
         gameOverModal: document.getElementById('game-over-modal'),
+        deckDiscardViewerModal: document.getElementById('deck-discard-viewer-modal'),
     };
     
     // Summon Payment Modal
@@ -118,5 +116,21 @@ export function updateAllModals(gameState) {
     if (gameState.gameover) {
         document.getElementById('game-over-message').textContent = `${gameState.player.life <= 0 ? 'Opponent' : 'Player'} Wins!`;
         modals.gameOverModal.classList.add('visible');
+    }
+
+    // Deck Discard Viewer Modal
+    const discardViewerState = gameState.deckDiscardViewerState;
+    if (discardViewerState.isActive) {
+        modals.deckDiscardViewerModal.classList.add('visible');
+        const container = document.getElementById('deck-discard-viewer-container');
+        container.innerHTML = ''; // เคลียร์การ์ดเก่าออกก่อน
+        discardViewerState.cards.forEach(card => {
+            // ใช้ createCardElement เพื่อความสอดคล้อง แต่กำหนด location เป็น 'viewer'
+            // เพื่อไม่ให้มี effect พิเศษเช่น 'can-attack'
+            const cardEl = createCardElement(card, 'viewer', discardViewerState.owner, gameState, callbacks);
+            container.appendChild(cardEl);
+        });
+    } else {
+        modals.deckDiscardViewerModal.classList.remove('visible');
     }
 }

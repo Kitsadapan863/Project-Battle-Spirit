@@ -2,7 +2,7 @@
 import { calculateCost } from '../utils.js';
 import { resolveTriggeredEffects } from '../effects/index.js'; // อาจจะต้องสร้างไฟล์นี้
 // ---- START: แก้ไข/เพิ่ม import ----
-import { drawCard, discardOpponentDeck, initiateDiscard, moveUsedMagicToTrash, destroyCards, applyPowerUpEffect, cleanupField   } from './card.js';
+import { drawCard, initiateDeckDiscard, initiateDiscard, moveUsedMagicToTrash, destroyCards, applyPowerUpEffect, cleanupField   } from './card.js';
 // ---- END: แก้ไข/เพิ่ม import ----
 
 // ---- START: เพิ่ม Helper Functions ----
@@ -139,14 +139,15 @@ export function confirmMagicPayment(gameState) {
                 moveUsedMagicToTrash(cardToUse.uid, gameState);
                 break;
             
-            // *** START: เพิ่ม case 'discard' สำหรับ Magic Hammer ***
+            // *** START: แก้ไข case 'discard' สำหรับ Magic Hammer ***
             case 'discard':
                 if (effectToUse.quantity) {
-                    discardOpponentDeck(effectToUse.quantity, 'opponent', gameState);
+                    // เรียกใช้ฟังก์ชันที่ถูกต้อง
+                    initiateDeckDiscard(effectToUse.quantity, 'opponent', gameState);
                 }
                 moveUsedMagicToTrash(cardToUse.uid, gameState);
                 break;
-            // *** END: เพิ่ม case 'discard' ***
+            // *** END: แก้ไข case 'discard' ***
             case 'power up':
                 const validPowerUpTargets = findValidTargets(effectToUse.target, gameState);
                 if (validPowerUpTargets.length > 0) {

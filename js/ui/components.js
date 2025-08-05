@@ -42,10 +42,12 @@ export function getDOMElements() {
         cardTrashModal: document.getElementById('card-trash-modal'),
         opponentCardTrashModal: document.getElementById('opponent-card-trash-modal'),
         effectChoiceModal: document.getElementById('effect-choice-modal'),
+        deckDiscardViewerModal: document.getElementById('deck-discard-viewer-modal'),
 
         // Modal Action Buttons & Content
         cardTrashViewerContainer: document.getElementById('card-trash-viewer-container'), // <-- เพิ่มที่นี่
         opponentCardTrashViewerContainer: document.getElementById('opponent-card-trash-viewer-container'), // <-- เพิ่มที่นี่
+        deckDiscardViewerContainer: document.getElementById('deck-discard-viewer-container'),
         effectChoiceTitle: document.getElementById('effect-choice-title'),
         effectChoiceButtons: document.getElementById('effect-choice-buttons'),
         confirmSummonBtn: document.getElementById('confirm-summon-btn'),
@@ -61,6 +63,7 @@ export function getDOMElements() {
         closeTrashViewerBtn: document.getElementById('close-trash-viewer-btn'),
         closeOpponentTrashViewerBtn: document.getElementById('close-opponent-trash-viewer-btn'),
         cancelEffectChoiceBtn: document.getElementById('cancel-effect-choice-btn'),
+        confirmDeckDiscardBtn: document.getElementById('confirm-deck-discard-btn'),
         // ---- END: CORRECTED THIS BLOCK ----
     };
 }

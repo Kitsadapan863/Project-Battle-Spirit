@@ -5,7 +5,7 @@ export const playerCards = [
     {
         id: 'card-rock-golem',
         name: 'Rock-Golem',
-        image: '../images/Rock-Golem.webp',
+        image: '../images/cards_blue/spirit/Rock-Golem.webp',
         cost: 3,
         symbol_cost:{"blue":2},
         level:{ "level-1":{ "core": 1, "bp": 3000 }, "level-2":{ "core": 2, "bp": 4000 }, "level-3":{ "core": 4, "bp": 7000 } },
@@ -19,7 +19,7 @@ export const playerCards = [
         {
         id: 'card-rock-golem',
         name: 'Rock-Golem',
-        image: '../images/Rock-Golem.webp',
+        image: '../images/cards_blue/spirit/Rock-Golem.webp',
         cost: 3,
         symbol_cost:{"blue":2},
         level:{ "level-1":{ "core": 1, "bp": 3000 }, "level-2":{ "core": 2, "bp": 4000 }, "level-3":{ "core": 4, "bp": 7000 } },
@@ -33,7 +33,7 @@ export const playerCards = [
         {
         id: 'card-rock-golem',
         name: 'Rock-Golem',
-        image: '../images/Rock-Golem.webp',
+        image: '../images/cards_blue/spirit/Rock-Golem.webp',
         cost: 3,
         symbol_cost:{"blue":2},
         level:{ "level-1":{ "core": 1, "bp": 3000 }, "level-2":{ "core": 2, "bp": 4000 }, "level-3":{ "core": 4, "bp": 7000 } },
@@ -48,7 +48,7 @@ export const playerCards = [
     {
         id: 'card-castle-golem',
         name: 'The MobileFortress Castle-Golem',
-        image: '../images/The MobileFortress Castle-Golem.webp',
+        image: '../images/cards_blue/spirit/The MobileFortress Castle-Golem.webp',
         cost: 8,
         symbol_cost:{"blue":4},
         level:{ "level-1":{ "core": 1, "bp": 6000 }, "level-2":{ "core": 6, "bp": 12000 } },
@@ -63,7 +63,7 @@ export const playerCards = [
         {
         id: 'card-castle-golem',
         name: 'The MobileFortress Castle-Golem',
-        image: '../images/The MobileFortress Castle-Golem.webp',
+        image: '../images/cards_blue/spirit/The MobileFortress Castle-Golem.webp',
         cost: 8,
         symbol_cost:{"blue":4},
         level:{ "level-1":{ "core": 1, "bp": 6000 }, "level-2":{ "core": 6, "bp": 12000 } },
@@ -78,7 +78,7 @@ export const playerCards = [
         {
         id: 'card-castle-golem',
         name: 'The MobileFortress Castle-Golem',
-        image: '../images/The MobileFortress Castle-Golem.webp',
+        image: '../images/cards_blue/spirit/The MobileFortress Castle-Golem.webp',
         cost: 8,
         symbol_cost:{"blue":4},
         level:{ "level-1":{ "core": 1, "bp": 6000 }, "level-2":{ "core": 6, "bp": 12000 } },
@@ -94,7 +94,7 @@ export const playerCards = [
 {
     id: 'card-giantHero-titus',
     name: 'The GiantHero Titus',
-    image: '../images/The GiantHero Titus.webp', 
+    image: '../images/cards_blue/spirit/The GiantHero Titus.webp', 
     cost: 8,
     symbol_cost:{"blue":4},
     level:{ "level-1":{ "core": 1, "bp": 6000 }, "level-2":{ "core": 4, "bp": 9000 } },
@@ -109,7 +109,7 @@ export const playerCards = [
 {
     id: 'card-giantHero-titus',
     name: 'The GiantHero Titus',
-    image: '../images/The GiantHero Titus.webp', 
+    image: '../images/cards_blue/spirit/The GiantHero Titus.webp', 
     cost: 8,
     symbol_cost:{"blue":4},
     level:{ "level-1":{ "core": 1, "bp": 6000 }, "level-2":{ "core": 4, "bp": 9000 } },
@@ -124,7 +124,7 @@ export const playerCards = [
 {
     id: 'card-giantHero-titus',
     name: 'The GiantHero Titus',
-    image: '../images/The GiantHero Titus.webp', 
+    image: '../images/cards_blue/spirit/The GiantHero Titus.webp', 
     cost: 8,
     symbol_cost:{"blue":4},
     level:{ "level-1":{ "core": 1, "bp": 6000 }, "level-2":{ "core": 4, "bp": 9000 } },
@@ -141,7 +141,7 @@ export const playerCards = [
 {
     id: 'card-steam-golem',
     name: 'Steam-Golem',
-    image: '../images/Steam-Golem.webp', 
+    image: '../images/cards_blue/spirit/Steam-Golem.webp', 
     cost: 5,
     symbol_cost:{"blue":3},
     level:{ "level-1":{ "core": 1, "bp": 4000 }, "level-2":{ "core": 4, "bp": 5000 }, "level-3":{ "core": 5, "bp": 6000 } },
@@ -157,7 +157,7 @@ export const playerCards = [
 {
     id: 'card-steam-golem',
     name: 'Steam-Golem',
-    image: '../images/Steam-Golem.webp', 
+    image: '../images/cards_blue/spirit/Steam-Golem.webp', 
     cost: 5,
     symbol_cost:{"blue":3},
     level:{ "level-1":{ "core": 1, "bp": 4000 }, "level-2":{ "core": 4, "bp": 5000 }, "level-3":{ "core": 5, "bp": 6000 } },
@@ -173,7 +173,7 @@ export const playerCards = [
 {
     id: 'card-steam-golem',
     name: 'Steam-Golem',
-    image: '../images/Steam-Golem.webp', 
+    image: '../images/cards_blue/spirit/Steam-Golem.webp', 
     cost: 5,
     symbol_cost:{"blue":3},
     level:{ "level-1":{ "core": 1, "bp": 4000 }, "level-2":{ "core": 4, "bp": 5000 }, "level-3":{ "core": 5, "bp": 6000 } },
@@ -190,7 +190,7 @@ export const playerCards = [
 {
     id: 'card-clawSword-lazarus',
     name: 'The ClawSword Lazarus',
-    image: '../images/The ClawSword Lazarus.webp', 
+    image: '../images/cards_blue/spirit/The ClawSword Lazarus.webp', 
     cost: 2,
     symbol_cost:{"blue":1},
     level:{ "level-1":{ "core": 1, "bp": 2000 }, "level-2":{ "core": 2, "bp": 3000 }, "level-3":{ "core": 4, "bp": 5000 } },
@@ -204,7 +204,7 @@ export const playerCards = [
 {
     id: 'card-clawSword-lazarus',
     name: 'The ClawSword Lazarus',
-    image: '../images/The ClawSword Lazarus.webp', 
+    image: '../images/cards_blue/spirit/The ClawSword Lazarus.webp', 
     cost: 2,
     symbol_cost:{"blue":1},
     level:{ "level-1":{ "core": 1, "bp": 2000 }, "level-2":{ "core": 2, "bp": 3000 }, "level-3":{ "core": 4, "bp": 5000 } },
@@ -218,7 +218,7 @@ export const playerCards = [
 {
     id: 'card-clawSword-lazarus',
     name: 'The ClawSword Lazarus',
-    image: '../images/The ClawSword Lazarus.webp', 
+    image: '../images/cards_blue/spirit/The ClawSword Lazarus.webp', 
     cost: 2,
     symbol_cost:{"blue":1},
     level:{ "level-1":{ "core": 1, "bp": 2000 }, "level-2":{ "core": 2, "bp": 3000 }, "level-3":{ "core": 4, "bp": 5000 } },
@@ -233,7 +233,7 @@ export const playerCards = [
 {
     id: 'card-stone-statue',
     name: 'Stone-Statue',
-    image: '../images/Stone-Statue.webp', 
+    image: '../images/cards_blue/spirit/Stone-Statue.webp', 
     cost: 1,
     symbol_cost:{"blue":1},
     level:{ "level-1":{ "core": 1, "bp": 2000 }, "level-2":{ "core": 4, "bp": 4000 }},
@@ -247,7 +247,7 @@ export const playerCards = [
     {
     id: 'card-stone-statue',
     name: 'Stone-Statue',
-    image: '../images/Stone-Statue.webp', 
+    image: '../images/cards_blue/spirit/Stone-Statue.webp', 
     cost: 1,
     symbol_cost:{"blue":1},
     level:{ "level-1":{ "core": 1, "bp": 2000 }, "level-2":{ "core": 4, "bp": 4000 }},
@@ -261,7 +261,7 @@ export const playerCards = [
     {
     id: 'card-stone-statue',
     name: 'Stone-Statue',
-    image: '../images/Stone-Statue.webp', 
+    image: '../images/cards_blue/spirit/Stone-Statue.webp', 
     cost: 1,
     symbol_cost:{"blue":1},
     level:{ "level-1":{ "core": 1, "bp": 2000 }, "level-2":{ "core": 4, "bp": 4000 }},
@@ -276,7 +276,7 @@ export const playerCards = [
      {
     id: 'card-two-sword-ambrose',
     name: 'The Two-Sword Ambrose',
-    image: '../images/The Two-Sword Ambrose.webp', 
+    image: '../images/cards_blue/spirit/The Two-Sword Ambrose.webp', 
     cost: 2,
     symbol_cost:{"blue":1},
     level:{ "level-1":{ "core": 1, "bp": 2000 }, "level-2":{ "core": 3, "bp": 3000 }, "level-3":{ "core": 4, "bp": 5000 }},
@@ -292,7 +292,7 @@ export const playerCards = [
      {
     id: 'card-two-sword-ambrose',
     name: 'The Two-Sword Ambrose',
-    image: '../images/The Two-Sword Ambrose.webp', 
+    image: '../images/cards_blue/spirit/The Two-Sword Ambrose.webp', 
     cost: 2,
     symbol_cost:{"blue":1},
     level:{ "level-1":{ "core": 1, "bp": 2000 }, "level-2":{ "core": 3, "bp": 3000 }, "level-3":{ "core": 4, "bp": 5000 }},
@@ -308,7 +308,7 @@ export const playerCards = [
      {
     id: 'card-two-sword-ambrose',
     name: 'The Two-Sword Ambrose',
-    image: '../images/The Two-Sword Ambrose.webp', 
+    image: '../images/cards_blue/spirit/The Two-Sword Ambrose.webp', 
     cost: 2,
     symbol_cost:{"blue":1},
     level:{ "level-1":{ "core": 1, "bp": 2000 }, "level-2":{ "core": 3, "bp": 3000 }, "level-3":{ "core": 4, "bp": 5000 }},
@@ -323,7 +323,7 @@ export const playerCards = [
     //The Soldier Gustav
     {id: 'card-soldier-gustav',
     name: 'The Soldier Gustav',
-    image: '../images/The Soldier Gustav.webp', 
+    image: '../images/cards_blue/spirit/The Soldier Gustav.webp', 
     cost: 1,
     symbol_cost:{"blue":1},
     level:{ "level-1":{ "core": 1, "bp": 2000 }, "level-2":{ "core": 3, "bp": 4000 }, "level-3":{ "core": 6, "bp": 6000 }},
@@ -334,7 +334,7 @@ export const playerCards = [
     },
     {id: 'card-soldier-gustav',
     name: 'The Soldier Gustav',
-    image: '../images/The Soldier Gustav.webp', 
+    image: '../images/cards_blue/spirit/The Soldier Gustav.webp', 
     cost: 1,
     symbol_cost:{"blue":1},
     level:{ "level-1":{ "core": 1, "bp": 2000 }, "level-2":{ "core": 3, "bp": 4000 }, "level-3":{ "core": 6, "bp": 6000 }},
@@ -345,7 +345,7 @@ export const playerCards = [
     },
     {id: 'card-soldier-gustav',
     name: 'The Soldier Gustav',
-    image: '../images/The Soldier Gustav.webp', 
+    image: '../images/cards_blue/spirit/The Soldier Gustav.webp', 
     cost: 1,
     symbol_cost:{"blue":1},
     level:{ "level-1":{ "core": 1, "bp": 2000 }, "level-2":{ "core": 3, "bp": 4000 }, "level-3":{ "core": 6, "bp": 6000 }},
@@ -357,7 +357,7 @@ export const playerCards = [
     //The BattleBeast Bulltop
     {id: 'card-battlebeast-bulltop',
     name: 'The BattleBeast Bulltop',
-    image: '../images/The BattleBeast Bulltop.webp', 
+    image: '../images/cards_blue/spirit/The BattleBeast Bulltop.webp', 
     cost: 0,
     symbol_cost:{"blue":0},
     level:{ "level-1":{ "core": 1, "bp": 1000 }, "level-2":{ "core": 3, "bp": 3000 }},
@@ -368,7 +368,7 @@ export const playerCards = [
     },
         {id: 'card-battlebeast-bulltop',
     name: 'The BattleBeast Bulltop',
-    image: '../images/The BattleBeast Bulltop.webp', 
+    image: '../images/cards_blue/spirit/The BattleBeast Bulltop.webp', 
     cost: 0,
     symbol_cost:{"blue":0},
     level:{ "level-1":{ "core": 1, "bp": 1000 }, "level-2":{ "core": 3, "bp": 3000 }},
@@ -379,7 +379,7 @@ export const playerCards = [
     },
         {id: 'card-battlebeast-bulltop',
     name: 'The BattleBeast Bulltop',
-    image: '../images/The BattleBeast Bulltop.webp', 
+    image: '../images/cards_blue/spirit/The BattleBeast Bulltop.webp', 
     cost: 0,
     symbol_cost:{"blue":0},
     level:{ "level-1":{ "core": 1, "bp": 1000 }, "level-2":{ "core": 3, "bp": 3000 }},
@@ -392,7 +392,7 @@ export const playerCards = [
     {
         id: 'magic-strong-draw',
         name: 'Strong Draw',
-        image: '../images/Strong Draw.webp',
+        image: '../images/cards_blue/magic/Strong Draw.webp',
         cost: 3,
         symbol_cost:{"blue":2},
         type: 'Magic',
@@ -407,7 +407,7 @@ export const playerCards = [
         {
         id: 'magic-strong-draw',
         name: 'Strong Draw',
-        image: '../images/Strong Draw.webp',
+        image: '../images/cards_blue/magic/Strong Draw.webp',
         cost: 3,
         symbol_cost:{"blue":2},
         type: 'Magic',
@@ -422,7 +422,7 @@ export const playerCards = [
         {
         id: 'magic-strong-draw',
         name: 'Strong Draw',
-        image: '../images/Strong Draw.webp',
+        image: '../images/cards_blue/magic/Strong Draw.webp',
         cost: 3,
         symbol_cost:{"blue":2},
         type: 'Magic',
@@ -438,7 +438,7 @@ export const playerCards = [
     {
         id: 'magic-hammer',
         name: 'Magic Hammer',
-        image: '../images/Magic Hammer.webp',
+        image: '../images/cards_blue/magic/Magic Hammer.webp',
         cost: 4,
         symbol_cost:{"blue":2},
         type: 'Magic',
@@ -453,7 +453,7 @@ export const playerCards = [
         {
         id: 'magic-hammer',
         name: 'Magic Hammer',
-        image: '../images/Magic Hammer.webp',
+        image: '../images/cards_blue/magic/Magic Hammer.webp',
         cost: 4,
         symbol_cost:{"blue":2},
         type: 'Magic',
@@ -468,7 +468,7 @@ export const playerCards = [
         {
         id: 'magic-hammer',
         name: 'Magic Hammer',
-        image: '../images/Magic Hammer.webp',
+        image: '../images/cards_blue/magic/Magic Hammer.webp',
         cost: 4,
         symbol_cost:{"blue":2},
         type: 'Magic',
@@ -484,7 +484,7 @@ export const playerCards = [
     {
         id: 'magic-blitz',
         name: 'Blitz',
-        image: '../images/Blitz.webp', 
+        image: '../images/cards_blue/magic/Blitz.webp', 
         cost: 4,
         symbol_cost:{"blue":2},
         type: 'Magic',
@@ -499,7 +499,7 @@ export const playerCards = [
     {
         id: 'magic-blitz',
         name: 'Blitz',
-        image: '../images/Blitz.webp', 
+        image: '../images/cards_blue/magic/Blitz.webp', 
         cost: 4,
         symbol_cost:{"blue":2},
         type: 'Magic',
@@ -514,7 +514,7 @@ export const playerCards = [
     {
         id: 'magic-blitz',
         name: 'Blitz',
-        image: '../images/Blitz.webp', 
+        image: '../images/cards_blue/magic/Blitz.webp', 
         cost: 4,
         symbol_cost:{"blue":2},
         type: 'Magic',
@@ -530,7 +530,7 @@ export const playerCards = [
     {
         id: 'magic-construction',
         name: 'Construction',
-        image: '../images/Construction.webp', 
+        image: '../images/cards_blue/magic/Construction.webp', 
         cost: 6,
         symbol_cost:{"blue":3},
         type: 'Magic',
@@ -545,7 +545,7 @@ export const playerCards = [
     {
         id: 'magic-construction',
         name: 'Construction',
-        image: '../images/Construction.webp', 
+        image: '../images/cards_blue/magic/Construction.webp', 
         cost: 6,
         symbol_cost:{"blue":3},
         type: 'Magic',
@@ -560,7 +560,7 @@ export const playerCards = [
     {
         id: 'magic-construction',
         name: 'Construction',
-        image: '../images/Construction.webp', 
+        image: '../images/cards_blue/magic/Construction.webp', 
         cost: 6,
         symbol_cost:{"blue":3},
         type: 'Magic',
@@ -576,7 +576,7 @@ export const playerCards = [
     {
         id: 'nexus-battle-line',
         name: 'The Collapse of Battle Line',
-        image: '../images/The Collapse of Battle Line.webp', 
+        image: '../images/cards_blue/nexus/The Collapse of Battle Line.webp', 
         cost: 4,
         symbol_cost:{"blue":2},
         level:{ "level-1":{ "core": 0 }, "level-2":{ "core": 4 } },
@@ -591,7 +591,7 @@ export const playerCards = [
         {
         id: 'nexus-battle-line',
         name: 'The Collapse of Battle Line',
-        image: '../images/The Collapse of Battle Line.webp', 
+        image: '../images/cards_blue/nexus/The Collapse of Battle Line.webp', 
         cost: 4,
         symbol_cost:{"blue":2},
         level:{ "level-1":{ "core": 0 }, "level-2":{ "core": 4 } },
@@ -606,7 +606,7 @@ export const playerCards = [
         {
         id: 'nexus-battle-line',
         name: 'The Collapse of Battle Line',
-        image: '../images/The Collapse of Battle Line.webp', 
+        image: '../images/cards_blue/nexus/The Collapse of Battle Line.webp', 
         cost: 4,
         symbol_cost:{"blue":2},
         level:{ "level-1":{ "core": 0 }, "level-2":{ "core": 4 } },
@@ -622,7 +622,7 @@ export const playerCards = [
     {
         id: 'nexus-hq-fighting-spirits',
         name: 'The H.Q. filled with Fighting Spirits',
-        image: '../images/The H.Q. filled with Fighting Spirits.webp', 
+        image: '../images/cards_blue/nexus/The H.Q. filled with Fighting Spirits.webp', 
         cost: 4,
         symbol_cost:{"blue":3},
         level:{ "level-1":{ "core": 0 }, "level-2":{ "core": 3 } },
@@ -637,7 +637,7 @@ export const playerCards = [
         {
         id: 'nexus-hq-fighting-spirits',
         name: 'The H.Q. filled with Fighting Spirits',
-        image: '../images/The H.Q. filled with Fighting Spirits.webp', 
+        image: '../images/cards_blue/nexus/The H.Q. filled with Fighting Spirits.webp', 
         cost: 4,
         symbol_cost:{"blue":3},
         level:{ "level-1":{ "core": 0 }, "level-2":{ "core": 3 } },
@@ -652,7 +652,7 @@ export const playerCards = [
         {
         id: 'nexus-hq-fighting-spirits',
         name: 'The H.Q. filled with Fighting Spirits',
-        image: '../images/The H.Q. filled with Fighting Spirits.webp', 
+        image: '../images/cards_blue/nexus/The H.Q. filled with Fighting Spirits.webp', 
         cost: 4,
         symbol_cost:{"blue":3},
         level:{ "level-1":{ "core": 0 }, "level-2":{ "core": 3 } },

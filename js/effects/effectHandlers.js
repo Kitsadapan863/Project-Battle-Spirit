@@ -1,27 +1,6 @@
 // js/effects/effectHandlers.js
 import { getCardLevel } from '../utils.js';
-
-/**
- * ย้ายการ์ดบนสุดของเด็คคู่ต่อสู้ไปยังแทรช
- * @param {number} count - จำนวนการ์ดที่จะทิ้ง
- * @param {string} opponentKey - Key ของคู่ต่อสู้ ('player' or 'opponent')
- * @param {object} gameState - สถานะเกม
- * @returns {Array} - รายการการ์ดที่ถูกทิ้ง
- */
-function discardOpponentDeck(count, opponentKey, gameState) {
-    let discardedCards = [];
-    console.log(`[Effect: Deck Discard] Discarding ${count} cards from ${opponentKey}'s deck.`);
-    for (let i = 0; i < count; i++) {
-        if (gameState[opponentKey].deck.length > 0) {
-            const discardedCard = gameState[opponentKey].deck.shift();
-            gameState[opponentKey].cardTrash.push(discardedCard);
-            discardedCards.push(discardedCard);
-        } else {
-            break; // หยุดเมื่อเด็คหมด
-        }
-    }
-    return discardedCards;
-}
+import { initiateDeckDiscard } from '../game_actions/card.js';
 
 /**
  * เพิ่มพลัง (BP) ให้กับ Spirit ชั่วคราว
@@ -82,7 +61,7 @@ export function applyCrush(card, cardLevel, ownerKey, gameState) {
             }
         }
 
-    const discardedCards = discardOpponentDeck(cardsToDiscard, opponentKey, gameState);
+    const discardedCards = initiateDeckDiscard(cardsToDiscard, opponentKey, gameState);
 
     // ตรวจสอบเอฟเฟกต์ที่ทำงานหลัง Crush (เช่น The Two-Sword Ambrose)
     if (card.effects) {
@@ -159,6 +138,6 @@ export function applyDiscard(card, effect, ownerKey, gameState) {
     }
 
     if (cardsToDiscard > 0) {
-        discardOpponentDeck(cardsToDiscard, opponentKey, gameState);
+        initiateDeckDiscard(cardsToDiscard, opponentKey, gameState);
     }
 }

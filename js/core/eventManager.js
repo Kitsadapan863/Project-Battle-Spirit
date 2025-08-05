@@ -142,8 +142,6 @@ export function setupInitialEventListeners(gameState, callbacks) {
         setTimeout(() => aiAttackStep(gameState, callbacks, true), 1000);
     });
 
-    // ---- START: แก้ไขส่วนนี้ ----
-    // เหลือ Event Listener ของ passFlashBtn แค่อันเดียว
     UIElements.passFlashBtn.addEventListener('click', () => {
         let resolutionStatus = BattleActions.passFlash(gameState);
         updateUI(gameState, callbacks);
@@ -168,7 +166,6 @@ export function setupInitialEventListeners(gameState, callbacks) {
             }, 500);
         }
     });
-    // ---- END: แก้ไขส่วนนี้ ----
 
     UIElements.cancelMagicBtn.addEventListener('click', () => {
         MagicActions.cancelMagicPayment(gameState);
@@ -200,6 +197,18 @@ export function setupInitialEventListeners(gameState, callbacks) {
         gameState.effectChoiceState = { isChoosing: false, card: null };
         updateUI(gameState, callbacks);
     });
+
+    UIElements.confirmDeckDiscardBtn.addEventListener('click', () => {
+        if (CardActions.confirmDeckDiscard(gameState)) {
+            // หลังจากยืนยันการทิ้งการ์ดแล้ว ให้ตรวจสอบว่าเกมอยู่
+            // ในระหว่างการโจมตีหรือไม่ ถ้าใช่ ให้เข้าสู่ Flash Timing
+            if (gameState.attackState.isAttacking) {
+                BattleActions.enterFlashTiming(gameState, 'beforeBlock');
+            }
+            updateUI(gameState, callbacks);
+        }
+    });
+
 
     // Trash Viewers
     UIElements.playerCardTrashZone.addEventListener('click', () => UIElements.cardTrashModal.classList.add('visible'));
